@@ -139,7 +139,7 @@ The [official Hedera prize page](https://ethglobal.com/events/mumbai/prizes/hede
 - [x] Application scaffolding
 - [x] Hedera testnet configuration and native SDK foundation
 - [ ] Native HTS integration
-- [ ] Native HCS integration
+- [ ] Native HCS integration (implemented, live Mirror Node verification pending)
 - [ ] First x402-protected worker endpoint
 - [ ] First autonomous x402 payment
 - [ ] Agent discovery
@@ -232,6 +232,27 @@ AgentHire Credit creation was verified on Hedera testnet. The consensus receipt 
 | Transaction ID | [`0.0.11330954@1793920574.831650235`](https://hashscan.io/testnet/transaction/0.0.11330954-1793920574-831650235) |
 | Charged fee | 14.79494208 testnet HBAR |
 
+### Native HCS procurement audit trail
+
+The HCS CLI submits compact procurement references to a testnet topic using the native SDK. The topic memo is `AgentHire Procurement Audit Trail`. The operator's public key is the submit key, so a submission requires the corresponding signature. The topic has no admin key, which makes its permissions immutable. Topic messages are publicly readable.
+
+Version 1 events contain `version`, `eventId`, `eventType`, `jobId`, `agentId`, `timestamp`, `metadata`, and `payloadHash`. The event types are `JOB_CREATED`, `BID_SUBMITTED`, `CAPABILITY_TEST_REQUESTED`, `CAPABILITY_TEST_COMPLETED`, `WORKER_SELECTED`, `PAYMENT_SETTLED`, `TASK_COMPLETED`, and `TASK_FAILED`. Use opaque, non-sensitive identifiers and a UTC timestamp with millisecond precision. Metadata can include a worker ID, payment transaction ID, outcome, artifact digest, or a decimal string in `amountBaseUnits` with `amountUnit` set to `tinybar` or `token-base-unit`. Token amounts also require `tokenId`. Use only public references and digests. Keep credentials, personal data, prompts, and task contents off the topic.
+
+To reproduce `payloadHash`, remove that field, sort the remaining envelope keys and the keys inside `metadata` lexicographically, and serialize as compact JSON without whitespace or a trailing newline. Hash those UTF-8 bytes with SHA-256 and encode the digest as lowercase hexadecimal. The transmitted envelope also uses sorted keys, includes the digest, and is capped at 768 UTF-8 bytes.
+
+```bash
+pnpm --filter @agenthire/api hedera:hcs-demo create-topic --max-fee-hbar 2
+pnpm --filter @agenthire/api hedera:hcs-demo submit-event --max-fee-hbar 1
+```
+
+These commands preview one operation each. The fees shown are example caps in testnet HBAR. Set a deliberate cap and add `--execute` to submit that operation. Save the successful topic ID in the ignored root `.env` as `HEDERA_HCS_TOPIC_ID` before previewing or submitting an event. The sample event uses fixed illustrative identifiers and a fixed application timestamp. If submission is uncertain, check the printed transaction link before trying again.
+
+```bash
+pnpm --filter @agenthire/api hedera:hcs-demo verify-event --sequence <sequence-number>
+```
+
+Use the sequence number returned by the submission receipt or found on the Mirror Node. Verification is read-only and can run without operator credentials. It fetches the message at that topic and sequence, decodes the base64 payload, validates the schema, and recomputes its hash. The result is `verified`, `pending` after bounded polling for indexing, `invalid` for a malformed message or hash mismatch, or `error` for a retrieval failure. Indexed results include the consensus timestamp separately from the event's application timestamp. An HCS record establishes what was submitted to consensus. Task outcomes and payment claims require independent verification.
+
 ## References
 
 - [x402 protocol specification and reference implementations](https://github.com/x402-foundation/x402)
@@ -243,4 +264,4 @@ AgentHire Credit creation was verified on Hedera testnet. The consensus receipt 
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-The scaffold includes a landing page, an API health endpoint, a shared TypeScript contract, opt-in Hedera testnet balance diagnostics, and a native HTS demo CLI with verified testnet token creation. Live association and transfer verification is pending. HCS, payments, and agent workflows are planned.
+The scaffold includes a landing page, an API health endpoint, a shared TypeScript contract, opt-in Hedera testnet balance diagnostics, a native HTS demo CLI with verified testnet token creation, and an HCS audit demo CLI. Live HTS association and transfer and live HCS verification are pending. Payments and agent workflows are planned.

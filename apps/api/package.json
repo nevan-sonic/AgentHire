@@ -9,7 +9,8 @@
     "lint": "eslint src test",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
-    "hedera:hts-demo": "tsx src/cli/hts-demo.ts"
+    "hedera:hts-demo": "tsx src/cli/hts-demo.ts",
+    "hedera:hcs-demo": "tsx src/cli/hcs-demo.ts"
   },
   "dependencies": {
     "@agenthire/shared": "workspace:*",

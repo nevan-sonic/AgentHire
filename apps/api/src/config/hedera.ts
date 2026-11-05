@@ -14,7 +14,11 @@ export function loadHederaConfig(env: NodeJS.ProcessEnv) {
 
   const operatorAccountId = parseHederaAccountId(id, "HEDERA_OPERATOR_ID");
   const operatorKey = parseHederaPrivateKey(key, "HEDERA_OPERATOR_KEY");
+  const mirrorNodeUrl = loadHederaMirrorNodeUrl(env);
+  return { network, operatorAccountId, operatorKey, mirrorNodeUrl } as const;
+}
 
+export function loadHederaMirrorNodeUrl(env: NodeJS.ProcessEnv) {
   let mirrorNodeUrl: URL;
   try {
     mirrorNodeUrl = new URL(
@@ -32,7 +36,7 @@ export function loadHederaConfig(env: NodeJS.ProcessEnv) {
     throw new Error("HEDERA_MIRROR_NODE_URL must be an HTTPS base URL without credentials");
   }
 
-  return { network, operatorAccountId, operatorKey, mirrorNodeUrl };
+  return mirrorNodeUrl;
 }
 
 export function parseHederaAccountId(id: string, label: string): AccountId {
