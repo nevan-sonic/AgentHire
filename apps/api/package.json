@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src test",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test test/*.test.ts"
+    "test": "tsx --test test/*.test.ts",
+    "hedera:hts-demo": "tsx src/cli/hts-demo.ts"
   },
   "dependencies": {
     "@agenthire/shared": "workspace:*",

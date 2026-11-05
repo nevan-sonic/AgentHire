@@ -198,6 +198,31 @@ The status endpoint uses `MirrorNodeAccountBalanceQuery` from the [native Hedera
 
 A response with `connected: true` confirms that the Mirror Node returned a balance for the configured account. Consensus-node access and the ability to sign transactions require separate verification. See [Hedera's SDK migration guide](https://hedera.com/blog/mirrornodeaccountbalancequery-the-sdk-native-migration-path-for-accountbalancequery/).
 
+### Native HTS demo
+
+The CLI uses the Hiero SDK to create a fungible token, associate it with an account, and transfer it on Hedera testnet. **AgentHire Credit (AHC)** is a demonstration asset with two decimal places and a fixed supply of 100,000 base units (1,000.00 AHC). The operator is the treasury and holds the initial supply. AHC has no stated peg and no verified x402 facilitator support. The payment asset will be selected separately.
+
+Use the testnet operator credentials in the ignored root `.env`. Preview token creation:
+
+```bash
+pnpm --filter @agenthire/api hedera:hts-demo --create
+```
+
+Add `--execute` only when you intend to submit the transaction and pay the testnet fee. The preview shows the maximum transaction fee, which is 50 HBAR for creation and 5 HBAR each for association and transfer. The network determines the actual fee.
+
+```bash
+pnpm --filter @agenthire/api hedera:hts-demo --create --execute
+```
+
+Save the token ID from the successful receipt as `HEDERA_HTS_TOKEN_ID`. Set `HEDERA_HTS_RECIPIENT_ID` to a separate existing testnet account you are authorized to use. Explicit association also requires its matching `HEDERA_HTS_RECIPIENT_KEY` in the same format as the operator key. If the recipient already has an association or has an available automatic association slot, you can go directly to transfer.
+
+```bash
+pnpm --filter @agenthire/api hedera:hts-demo --associate --execute
+pnpm --filter @agenthire/api hedera:hts-demo --transfer --execute
+```
+
+Association and transfer verify the configured AHC token and treasury against indexed Mirror Node data. The transfer sends 100 base units (1.00 AHC) from treasury and checks its indexed token balance, which can lag after creation. Each operation prints its transaction ID, receipt status, and HashScan link. Open the creation receipt and token links to verify the ID and supply. Verify association and transfer from their own receipts. If submission or receipt retrieval fails, check the reported transaction in HashScan before retrying. Use the saved token ID for later steps.
+
 ## References
 
 - [x402 protocol specification and reference implementations](https://github.com/x402-foundation/x402)
@@ -209,4 +234,4 @@ A response with `connected: true` confirms that the Mirror Node returned a balan
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-The scaffold includes a landing page, an API health endpoint, a shared TypeScript contract, and opt-in Hedera testnet balance diagnostics. Payments, agent workflows, and HTS and HCS integrations are planned.
+The scaffold includes a landing page, an API health endpoint, a shared TypeScript contract, opt-in Hedera testnet balance diagnostics, and a native HTS demo CLI. Live HTS verification is pending. HCS, payments, and agent workflows are planned.
