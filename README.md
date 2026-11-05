@@ -223,6 +223,15 @@ pnpm --filter @agenthire/api hedera:hts-demo --transfer --execute
 
 Association and transfer verify the configured AHC token and treasury against indexed Mirror Node data. The transfer sends 100 base units (1.00 AHC) from treasury and checks its indexed token balance, which can lag after creation. Each operation prints its transaction ID, receipt status, and HashScan link. Open the creation receipt and token links to verify the ID and supply. Verify association and transfer from their own receipts. If submission or receipt retrieval fails, check the reported transaction in HashScan before retrying. Use the saved token ID for later steps.
 
+AgentHire Credit creation was verified on Hedera testnet. The consensus receipt returned `SUCCESS`, and the Mirror Node confirmed the treasury and initial supply. Association and transfer were verified with offline tests and await live verification.
+
+| Field | Verified result |
+| --- | --- |
+| Token ID | [`0.0.11331329`](https://hashscan.io/testnet/token/0.0.11331329) |
+| Receipt status | `SUCCESS` |
+| Transaction ID | [`0.0.11330954@1793920574.831650235`](https://hashscan.io/testnet/transaction/0.0.11330954-1793920574-831650235) |
+| Charged fee | 14.79494208 testnet HBAR |
+
 ## References
 
 - [x402 protocol specification and reference implementations](https://github.com/x402-foundation/x402)
@@ -234,4 +243,4 @@ Association and transfer verify the configured AHC token and treasury against in
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-The scaffold includes a landing page, an API health endpoint, a shared TypeScript contract, opt-in Hedera testnet balance diagnostics, and a native HTS demo CLI. Live HTS verification is pending. HCS, payments, and agent workflows are planned.
+The scaffold includes a landing page, an API health endpoint, a shared TypeScript contract, opt-in Hedera testnet balance diagnostics, and a native HTS demo CLI with verified testnet token creation. Live association and transfer verification is pending. HCS, payments, and agent workflows are planned.
