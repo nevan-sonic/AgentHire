@@ -194,7 +194,9 @@ The endpoint requires explicit opt-in and loopback access. It is disabled in pro
 
 Keep the private key in the ignored root `.env` file or an API-only secret store. Never commit or share it. Enable diagnostics only for local development and keep the API off public proxies while enabled.
 
-The [native Hedera SDK](https://docs.hedera.com/hedera/sdks-and-apis/sdks) sends a read-only account balance query to a consensus node. `HEDERA_MIRROR_NODE_URL` configures a base URL for future [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api) reads of indexed records. The status endpoint uses the SDK query.
+The status endpoint uses `MirrorNodeAccountBalanceQuery` from the [native Hedera SDK](https://docs.hedera.com/hedera/sdks-and-apis/sdks) to read indexed account data through the [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api). `HEDERA_MIRROR_NODE_URL` sets the HTTPS endpoint and defaults to the Hedera testnet Mirror Node.
+
+A response with `connected: true` confirms that the Mirror Node returned a balance for the configured account. Consensus-node access and the ability to sign transactions require separate verification. See [Hedera's SDK migration guide](https://hedera.com/blog/mirrornodeaccountbalancequery-the-sdk-native-migration-path-for-accountbalancequery/).
 
 ## References
 

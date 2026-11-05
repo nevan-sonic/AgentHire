@@ -1,4 +1,4 @@
-import { AccountId, PrivateKey } from "@hashgraph/sdk";
+import { AccountId, PrivateKey } from "@hiero-ledger/sdk";
 
 export function loadHederaConfig(env: NodeJS.ProcessEnv) {
   const network = env.HEDERA_NETWORK?.trim() ?? "testnet";
@@ -46,7 +46,8 @@ export function loadHederaConfig(env: NodeJS.ProcessEnv) {
     if (
       mirrorNodeUrl.protocol !== "https:" ||
       mirrorNodeUrl.username || mirrorNodeUrl.password ||
-      mirrorNodeUrl.search || mirrorNodeUrl.hash
+      mirrorNodeUrl.search || mirrorNodeUrl.hash ||
+      !["/", "/api/v1", "/api/v1/"].includes(mirrorNodeUrl.pathname)
     ) {
       throw new Error();
     }

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AccountBalanceQuery, Hbar, PrivateKey } from "@hashgraph/sdk";
+import { Hbar, MirrorNodeAccountBalanceQuery, PrivateKey } from "@hiero-ledger/sdk";
+import type { Client } from "@hiero-ledger/sdk";
 import Fastify from "fastify";
 import { createApp } from "../src/app.js";
 import { loadHederaConfig } from "../src/config/hedera.js";
@@ -46,18 +47,22 @@ test("rejects missing credentials, unsupported networks and invalid settings", (
   );
 });
 
-test("queries the configured operator with a deadline and preserves tinybar precision", async (t) => {
-  const config = loadHederaConfig(env);
+test("queries the configured Mirror Node with a deadline and preserves tinybar precision", async (t) => {
+  const config = loadHederaConfig({
+    ...env,
+    HEDERA_MIRROR_NODE_URL: "https://mirror.example.test:8443/api/v1",
+  });
   const connection = createHederaConnection(config);
   t.after(() => connection.close());
 
-  const execute = t.mock.method(AccountBalanceQuery.prototype, "execute", function (
-    this: AccountBalanceQuery,
-    client: { operatorAccountId: unknown },
+  const execute = t.mock.method(MirrorNodeAccountBalanceQuery.prototype, "execute", function (
+    this: MirrorNodeAccountBalanceQuery,
+    client: Client,
     timeout: number,
   ) {
     assert.equal(this.accountId?.toString(), env.HEDERA_OPERATOR_ID);
     assert.equal(String(client.operatorAccountId), env.HEDERA_OPERATOR_ID);
+    assert.equal(client.mirrorRestApiBaseUrl, "https://mirror.example.test:8443/api/v1");
     assert.equal(timeout, 5_000);
     return Promise.resolve({ hbars: Hbar.fromTinybars("9007199254740993") });
   });
