@@ -136,7 +136,7 @@ The [official Hedera prize page](https://ethglobal.com/events/mumbai/prizes/hede
 ## Development roadmap
 
 - [x] Project README
-- [ ] Application scaffolding
+- [x] Application scaffolding
 - [ ] Hedera testnet configuration
 - [ ] Native HTS integration
 - [ ] Native HCS integration
@@ -153,7 +153,23 @@ The [official Hedera prize page](https://ethglobal.com/events/mumbai/prizes/hede
 
 ## Getting started
 
-Setup and development instructions will be added after the application is scaffolded.
+Use Node.js 22 LTS (22.13 or later within 22.x) and pnpm 10.34.9. From the repository root:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+- Frontend at [http://localhost:3000](http://localhost:3000).
+- API health check at [http://localhost:3001/health](http://localhost:3001/health). It returns `{"status":"ok","service":"agenthire-api"}`.
+
+Both apps run with local defaults. To change the API port, copy the root `.env.example` to `.env` and set `API_PORT`. Copy `apps/web/.env.example` to `apps/web/.env.local` and set `NEXT_PUBLIC_API_URL` to the matching API origin. Restart the development servers after changing these values.
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm build
+```
 
 ## References
 
@@ -166,4 +182,4 @@ Setup and development instructions will be added after the application is scaffo
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-AgentHire is at the documentation milestone. The application is under development; payments, agent workflows, and Hedera integrations are not yet operational.
+The scaffold includes a landing page, an API health endpoint, and a shared TypeScript contract. Payments, agent workflows, and Hedera integrations are planned.
