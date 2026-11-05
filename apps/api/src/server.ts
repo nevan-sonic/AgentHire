@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.js";
+import { registerHederaStatus } from "./routes/hedera.js";
 
 const app = createApp();
 
@@ -24,6 +25,7 @@ try {
     throw new Error("API_PORT must be an integer between 1 and 65535");
   }
 
+  registerHederaStatus(app, process.env);
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
   await app.listen({ port, host: "localhost" });

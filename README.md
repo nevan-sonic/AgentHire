@@ -137,7 +137,7 @@ The [official Hedera prize page](https://ethglobal.com/events/mumbai/prizes/hede
 
 - [x] Project README
 - [x] Application scaffolding
-- [ ] Hedera testnet configuration
+- [x] Hedera testnet configuration and native SDK foundation
 - [ ] Native HTS integration
 - [ ] Native HCS integration
 - [ ] First x402-protected worker endpoint
@@ -169,7 +169,32 @@ Both apps run with local defaults. To change the API port, copy the root `.env.e
 pnpm typecheck
 pnpm lint
 pnpm build
+pnpm test
 ```
+
+### Hedera testnet diagnostics
+
+1. Sign in to the [Hedera Developer Portal](https://portal.hedera.com/) and create a testnet account, or use an existing testnet account you control. Get the numeric account ID and matching private key from your testnet account credentials.
+2. Copy the root `.env.example` to `.env`. Keep `HEDERA_NETWORK=testnet`, set `HEDERA_OPERATOR_ID` and `HEDERA_OPERATOR_KEY`, then set `HEDERA_DIAGNOSTICS_ENABLED=true`. Paste the DER hex key as issued. For a raw hex key, use the `ed25519:` or `ecdsa:` prefix to specify the algorithm. Unprefixed raw hex is interpreted as ED25519.
+3. Run `pnpm dev` from the repository root and open [http://localhost:3001/api/hedera/status](http://localhost:3001/api/hedera/status), using your configured API port if different.
+
+A successful query returns a response like the following. The account ID and balance are illustrative.
+
+```json
+{
+  "network": "testnet",
+  "connected": true,
+  "operatorAccountId": "0.0.123456",
+  "hbarBalance": "10.00000000",
+  "unit": "HBAR"
+}
+```
+
+The endpoint requires explicit opt-in and loopback access. It is disabled in production. Missing or invalid settings and failed balance queries return HTTP 503 when diagnostics are enabled. The existing `/health` endpoint stays available regardless of Hedera configuration.
+
+Keep the private key in the ignored root `.env` file or an API-only secret store. Never commit or share it. Enable diagnostics only for local development and keep the API off public proxies while enabled.
+
+The [native Hedera SDK](https://docs.hedera.com/hedera/sdks-and-apis/sdks) sends a read-only account balance query to a consensus node. `HEDERA_MIRROR_NODE_URL` configures a base URL for future [Mirror Node REST API](https://docs.hedera.com/hedera/sdks-and-apis/rest-api) reads of indexed records. The status endpoint uses the SDK query.
 
 ## References
 
@@ -182,4 +207,4 @@ pnpm build
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-The scaffold includes a landing page, an API health endpoint, and a shared TypeScript contract. Payments, agent workflows, and Hedera integrations are planned.
+The scaffold includes a landing page, an API health endpoint, a shared TypeScript contract, and opt-in Hedera testnet balance diagnostics. Payments, agent workflows, and HTS and HCS integrations are planned.

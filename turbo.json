@@ -5,7 +5,20 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["API_PORT", "NEXT_PUBLIC_API_URL"]
+      "passThroughEnv": ["NEXT_PUBLIC_API_URL"]
+    },
+    "@agenthire/api#dev": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": [
+        "API_PORT",
+        "NODE_ENV",
+        "HEDERA_NETWORK",
+        "HEDERA_OPERATOR_ID",
+        "HEDERA_OPERATOR_KEY",
+        "HEDERA_MIRROR_NODE_URL",
+        "HEDERA_DIAGNOSTICS_ENABLED"
+      ]
     },
     "build": {
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
@@ -22,6 +35,7 @@
       ]
     },
     "lint": {},
+    "test": {},
     "typecheck": {
       "dependsOn": [
         "^typecheck"
