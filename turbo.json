@@ -17,7 +17,9 @@
         "HEDERA_OPERATOR_ID",
         "HEDERA_OPERATOR_KEY",
         "HEDERA_MIRROR_NODE_URL",
-        "HEDERA_DIAGNOSTICS_ENABLED"
+        "HEDERA_DIAGNOSTICS_ENABLED",
+        "X402_ENABLED",
+        "X402_MERCHANT_ID"
       ]
     },
     "build": {

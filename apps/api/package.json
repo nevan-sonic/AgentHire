@@ -10,12 +10,15 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
     "hedera:hts-demo": "tsx src/cli/hts-demo.ts",
-    "hedera:hcs-demo": "tsx src/cli/hcs-demo.ts"
+    "hedera:hcs-demo": "tsx src/cli/hcs-demo.ts",
+    "x402:demo": "tsx src/cli/x402-demo.ts"
   },
   "dependencies": {
     "@agenthire/shared": "workspace:*",
     "@fastify/cors": "11.4.1",
     "@hiero-ledger/sdk": "2.90.1",
+    "@x402/core": "2.30.0",
+    "@x402/hedera": "2.30.0",
     "fastify": "5.12.8"
   },
   "devDependencies": {

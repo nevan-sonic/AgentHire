@@ -139,8 +139,8 @@ The [official Hedera prize page](https://ethglobal.com/events/mumbai/prizes/hede
 - [x] Application scaffolding
 - [x] Hedera testnet configuration and native SDK foundation
 - [ ] Native HTS integration
-- [ ] Native HCS integration (implemented, live Mirror Node verification pending)
-- [ ] First x402-protected worker endpoint
+- [x] Native HCS integration
+- [x] First x402-protected worker endpoint (local HTTP challenge verified)
 - [ ] First autonomous x402 payment
 - [ ] Agent discovery
 - [ ] A2A negotiation
@@ -253,6 +253,39 @@ pnpm --filter @agenthire/api hedera:hcs-demo verify-event --sequence <sequence-n
 
 Use the sequence number returned by the submission receipt or found on the Mirror Node. Verification is read-only and can run without operator credentials. It fetches the message at that topic and sequence, decodes the base64 payload, validates the schema, and recomputes its hash. The result is `verified`, `pending` after bounded polling for indexing, `invalid` for a malformed message or hash mismatch, or `error` for a retrieval failure. Indexed results include the consensus timestamp separately from the event's application timestamp. An HCS record establishes what was submitted to consensus. Task outcomes and payment claims require independent verification.
 
+The live testnet topic is [`0.0.11331471`](https://hashscan.io/testnet/topic/0.0.11331471). The [topic creation](https://hashscan.io/testnet/transaction/0.0.11330954-1793921406-890328389) and [demo event submission](https://hashscan.io/testnet/transaction/0.0.11330954-1793921496-879828644) returned `SUCCESS`. The event at sequence `1` was retrieved from the Mirror Node and independently verified.
+
+### Autonomous x402 worker demo
+
+The demo uses the [official x402 facilitator](https://docs.hedera.com/solutions/ai/x402/facilitators) at `https://x402.org/facilitator`. Its live `/supported` response advertises x402 v2 `exact` on `hedera:testnet` with fee payer `0.0.9185802`. The hosted testnet integration requires no API key or merchant registration. The [Hedera exact scheme](https://docs.hedera.com/solutions/ai/x402/exact-scheme) represents native HBAR as `0.0.0` and amounts in tinybars. The demo uses HBAR because it needs no token association or approval transaction. AHC remains a separate HTS demonstration asset.
+
+The API uses `@x402/core` and `@x402/hedera` **2.30.0**, with the installed Hiero SDK **2.90.1**. The Fastify adapter uses official x402 header codecs and the official HTTP facilitator client. The payer uses the official Hedera exact signer to create a partially signed transfer. The facilitator verifies it, signs as network fee payer, and submits it. The worker checks the settlement transaction ID and releases the result only after a successful settlement response.
+
+Set these variables in the ignored root `.env`:
+
+| Variable | Setting |
+| --- | --- |
+| `X402_ENABLED` | Set to `true` to enable the local worker endpoint. |
+| `X402_MERCHANT_ID` | An existing testnet account that will receive HBAR. The HTS/HCS operator account can serve as merchant. |
+| `X402_PAYER_ID` | A separate testnet account funded with HBAR. |
+| `X402_PAYER_KEY` | That account's private key, using the same format as the operator key. Only the payer CLI uses it to sign. |
+
+The worker runs at `POST /api/workers/analyze` and accepts JSON such as `{"values":[2,4,6,8]}`. It returns `402` with `PAYMENT-REQUIRED` for unpaid requests and returns count, min, max, and mean after settlement. The payer pins the endpoint, merchant, network, asset, and fee payer, then checks a total budget and per-payment cap of 1,000,000 tinybars (0.01 HBAR) before signing. The signed transaction's network fee cap is checked against 1 HBAR, sponsored by the facilitator. The worker atomically claims each transaction ID in the ignored `.agenthire-x402/` directory before settlement. Keep that directory for replay protection across local restarts. An ambiguous result requires reconciliation before another attempt.
+
+With the API running via `pnpm dev`, preview the actual HTTP challenge without a payer key or payment:
+
+```bash
+pnpm --filter @agenthire/api x402:demo
+```
+
+After authorizing one testnet payment from the configured payer, run:
+
+```bash
+pnpm --filter @agenthire/api x402:demo --execute
+```
+
+The CLI sends one paid request and prints the facilitator's transaction ID, HashScan link, and worker result. It then checks the Mirror Node for the matching HBAR debit and credit, consensus status, and charged fee. A pending or inconclusive read requires checking that transaction before retrying. The worker and payer have local test coverage. Live facilitator settlement is pending.
+
 ## References
 
 - [x402 protocol specification and reference implementations](https://github.com/x402-foundation/x402)
@@ -264,4 +297,4 @@ Use the sequence number returned by the submission receipt or found on the Mirro
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-The scaffold includes a landing page, an API health endpoint, a shared TypeScript contract, opt-in Hedera testnet balance diagnostics, a native HTS demo CLI with verified testnet token creation, and an HCS audit demo CLI. Live HTS association and transfer and live HCS verification are pending. Payments and agent workflows are planned.
+The scaffold includes a landing page, testnet balance diagnostics, verified native HTS token creation, a verified HCS audit event, and a locally tested x402 worker and payer. Live HTS association, HTS transfer, and x402 settlement are pending.
