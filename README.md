@@ -141,7 +141,7 @@ The [official Hedera prize page](https://ethglobal.com/events/mumbai/prizes/hede
 - [ ] Native HTS integration
 - [x] Native HCS integration
 - [x] First x402-protected worker endpoint (local HTTP challenge verified)
-- [ ] First autonomous x402 payment
+- [x] First autonomous x402 payment
 - [ ] Agent discovery
 - [ ] A2A negotiation
 - [ ] Adaptive PoCP engine
@@ -284,7 +284,19 @@ After authorizing one testnet payment from the configured payer, run:
 pnpm --filter @agenthire/api x402:demo --execute
 ```
 
-The CLI sends one paid request and prints the facilitator's transaction ID, HashScan link, and worker result. It then checks the Mirror Node for the matching HBAR debit and credit, consensus status, and charged fee. A pending or inconclusive read requires checking that transaction before retrying. The worker and payer have local test coverage. Live facilitator settlement is pending.
+The CLI sends one paid request and prints the facilitator's transaction ID, HashScan link, and worker result. It then checks the Mirror Node for the matching HBAR debit and credit, consensus status, and charged fee. A pending or inconclusive read requires checking that transaction before retrying.
+
+The official facilitator verified and settled one live testnet payment. The Mirror Node independently confirmed `SUCCESS`, the exact HBAR debit and credit, and the charged fee. The worker returned `{"count":4,"min":2,"max":8,"mean":5}` after settlement.
+
+| Field | Verified result |
+| --- | --- |
+| Payer | `0.0.11331589` |
+| Merchant | `0.0.11330954` |
+| Asset and amount | Native HBAR (`0.0.0`), 1,000,000 tinybars (0.01 HBAR) |
+| Sponsored fee payer | `0.0.9185802` |
+| Actual network fee | 0.00295897 testnet HBAR |
+| Consensus timestamp | `1793922746.955672525` |
+| Transaction ID | [`0.0.9185802@1793922740.663974206`](https://hashscan.io/testnet/transaction/0.0.9185802-1793922740-663974206) |
 
 ## References
 
@@ -297,4 +309,4 @@ The CLI sends one paid request and prints the facilitator's transaction ID, Hash
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-The scaffold includes a landing page, testnet balance diagnostics, verified native HTS token creation, a verified HCS audit event, and a locally tested x402 worker and payer. Live HTS association, HTS transfer, and x402 settlement are pending.
+The scaffold includes a landing page, testnet balance diagnostics, verified native HTS token creation, a verified HCS audit event, and a verified autonomous x402 payment. Live HTS association and transfer verification remain pending.
