@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { HTTPFacilitatorClient } from "@x402/core/http";
 import { createApp } from "./app.js";
 import { createDemoRegistry } from "./agents/workers.js";
+import { registerDemoEvidence } from "./routes/demo-evidence.js";
 import { registerHederaStatus } from "./routes/hedera.js";
 import { registerX402Worker } from "./routes/x402-worker.js";
 import { registerProcurementRoutes } from "./routes/procurement.js";
@@ -37,6 +38,7 @@ try {
   }
 
   registerHederaStatus(app, process.env);
+  registerDemoEvidence(app, process.env);
   const x402 = process.env.X402_ENABLED === "true" ? loadX402Config(process.env, port) : undefined;
   const registry = createDemoRegistry(port, x402?.merchant, Date.now, {}, capabilityTestPrice(process.env));
   registerProcurementRoutes(app, registry, Boolean(x402));

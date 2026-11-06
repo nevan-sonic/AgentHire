@@ -6,6 +6,7 @@
     "start": "next start --port 3000",
     "build": "next build",
     "lint": "eslint .",
+    "test": "tsx --test test/*.test.ts",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint-config-next": "16.4.5",
-    "tailwindcss": "4.3.4"
+    "tailwindcss": "4.3.4",
+    "tsx": "4.23.15"
   }
 }

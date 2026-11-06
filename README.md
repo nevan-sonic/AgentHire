@@ -485,3 +485,20 @@ Keep the ignored `.agenthire-x402/` journals. Each submission is claimed on disk
 **Early Development — ETHGlobal Mumbai 2026**
 
 The scaffold includes a landing page, testnet balance diagnostics, verified native HTS token creation, a verified HCS audit event, a verified autonomous x402 payment, local worker discovery, and adaptive selection with simulated capability tests. Live HTS association and transfer verification remain pending.
+
+## Judge dashboard
+
+Run `pnpm --filter @agenthire/web dev` from the repository root after running `pnpm install`, then open [the dashboard](http://localhost:3000/). The dashboard needs no wallet, account, environment secrets, or running API. To run the Fastify API separately, use `pnpm --filter @agenthire/api dev` in another terminal. Use the repository's Node 22 and pnpm versions.
+
+The dashboard labels its public snapshot **Recorded verified testnet execution**. It works offline from the API and Mirror Node because it renders checked-in public evidence from the completed procurement. Set `NEXT_PUBLIC_API_URL=http://localhost:3001` in `apps/web/.env.local` before starting Next.js to enable an optional read-only check against `GET /api/demo/procurement/paid-pocp-live-001`. The route reconciles the local procurement and publication journals with the Mirror Node. If the check times out or evidence is unavailable, the recorded dashboard stays visible. The replay only advances a browser-local timeline with Play, Pause, Reset, and Step forward. It submits no payments or HCS messages. Economy, Balanced, and Premium are local demo adapters. Their reliability percentages are model estimates. Both x402 settlements used native HBAR.
+
+- [Capability-test payment](https://hashscan.io/testnet/transaction/0.0.9185802-1793924857-289452104)
+- [Final-hire payment](https://hashscan.io/testnet/transaction/0.0.9185802-1793925842-587414987)
+- [HCS topic with eight procurement events at sequences 2–9](https://hashscan.io/testnet/topic/0.0.11331471)
+
+### 60-second judge demo
+
+1. **0–15 seconds.** Open the dashboard and click **Replay Procurement**. Point out that the manager bought a 5,000-tinybar test because the estimated net value was 23,000 tinybars.
+2. **15–30 seconds.** Show Economy's incorrect mean of 7, the reference mean of 6, and the reliability update from 60% to 40%. The manager switched to Balanced.
+3. **30–45 seconds.** Open **View On-Chain Proof**. Show the two settled x402 transactions, Balanced's independently checked output, and the 245,000-tinybar balance.
+4. **45–60 seconds.** Expand an audit event to show its consensus sequence, event ID, hash, and transaction. Open the HCS topic in HashScan.

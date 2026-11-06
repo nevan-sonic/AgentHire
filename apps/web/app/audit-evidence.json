@@ -1,0 +1,82 @@
+[
+  {
+    "eventId": "8686be3b3b5ac78fb0bc4129a64b4a0d5c46f321ee0d7ccd34e84bfcfb499e69",
+    "status": "verified",
+    "transactionId": "0.0.11330954@1793926598.255843902",
+    "description": "Manager opened the statistics task.",
+    "type": "JOB_CREATED",
+    "sequence": 2,
+    "payloadHash": "b0ce3403f7a7e33730d81185354b666f0a7d5602e0375812b034c3a443997fbf",
+    "timestamp": "1793926603.531040573"
+  },
+  {
+    "eventId": "96d606215db43464d39beaeaf48527b8607b8496e1a03a3328f0a661d0d2a590",
+    "status": "verified",
+    "transactionId": "0.0.11330954@1793926598.189427552",
+    "description": "Worker bid evidence recorded.",
+    "type": "BID_SUBMITTED",
+    "sequence": 3,
+    "payloadHash": "f41533e95e428f55004cd69a1163c62f5f16e4d06ac20d33118b9ecd8f1ab029",
+    "timestamp": "1793926606.224150104"
+  },
+  {
+    "eventId": "f9f405135039331ed6a4fe4ab5544986c874925437d7307a3cf52add9f2080e0",
+    "status": "verified",
+    "transactionId": "0.0.11330954@1793926601.347035628",
+    "description": "Manager chose to buy an Economy test.",
+    "type": "CAPABILITY_TEST_REQUESTED",
+    "sequence": 4,
+    "payloadHash": "444d999cb3a2a5e0c71f07a33e421125a97debcc495d01a6dbac55b5fd3cc612",
+    "timestamp": "1793926608.210898302"
+  },
+  {
+    "eventId": "0a0fc87df0c2a74754f0bcf78cdc248460ad5c506cc753d77049b36d08226f38",
+    "status": "verified",
+    "transactionId": "0.0.11330954@1793926602.550526916",
+    "description": "Economy test payment settled.",
+    "type": "PAYMENT_SETTLED",
+    "sequence": 5,
+    "payloadHash": "31efa6047c2b33e2eb979d0c01ff4a608a725312b592eae80fd2c029ec9f7a00",
+    "timestamp": "1793926609.824141281"
+  },
+  {
+    "eventId": "ecbe96fcf85e9cc04b0271e7166e95bf7ac22cfb16de7cd61f0f0df363e4be39",
+    "status": "verified",
+    "transactionId": "0.0.11330954@1793926606.642877861",
+    "description": "Independent evaluation found an incorrect mean.",
+    "type": "CAPABILITY_TEST_COMPLETED",
+    "sequence": 6,
+    "payloadHash": "6163ea6e3908ff45f5746a39ca4b47aa020a309669f6e95e39a4bcaeff81b707",
+    "timestamp": "1793926613.142500090"
+  },
+  {
+    "eventId": "24726d41464f5938e395738651b075b198e1ad2795e8dfc6c8d3ab50f01b1e81",
+    "status": "verified",
+    "transactionId": "0.0.11330954@1793926610.007260159",
+    "description": "Balanced selected after the reliability update.",
+    "type": "WORKER_SELECTED",
+    "sequence": 7,
+    "payloadHash": "c3167c6fe90e11122e20f92c816c55dd1d8ab2c78ea3028cbcc3c39021dbb162",
+    "timestamp": "1793926616.962529429"
+  },
+  {
+    "eventId": "5c3050182f725a1bd521fb0748abec168d619844166d69cb03e49693f1f1513f",
+    "status": "verified",
+    "transactionId": "0.0.11330954@1793926616.639153091",
+    "description": "Balanced hire payment settled.",
+    "type": "PAYMENT_SETTLED",
+    "sequence": 8,
+    "payloadHash": "6c956e6f9c37bd8fcefaf42fa45f15803c7b87b5171869dcbe9b8aba65ee0699",
+    "timestamp": "1793926620.163175611"
+  },
+  {
+    "eventId": "159f04d35b12efaba11d7edbc81cd96a0b5c719042c2c7b0887d8de00cf06b36",
+    "status": "verified",
+    "transactionId": "0.0.11330954@1793926615.829030856",
+    "description": "Balanced output passed independent evaluation.",
+    "type": "TASK_COMPLETED",
+    "sequence": 9,
+    "payloadHash": "343c35ee866193f27138aeb9e13222fbb79c27102592f8c59336ffe4805f3bb5",
+    "timestamp": "1793926623.384187104"
+  }
+]
