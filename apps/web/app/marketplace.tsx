@@ -20,19 +20,19 @@ export function Marketplace({ children }: { children: ReactNode }) {
           {/* Nav Links */}
           <nav className="hidden md:flex items-center gap-1">
             <Link href="/" className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.05] transition">
-              Pipeline Workspace
+              Run Tasks
             </Link>
             <Link href="/agents" className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition">
-              Marketplace
+              Explore Agents
             </Link>
             <Link href="/publish" className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition">
-              Publish Agent
+              Monetize / Publish Agent
             </Link>
             <Link href="/analytics" className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition">
-              Ledger & Economics
+              My Wallet & Earnings
             </Link>
             <Link href="/transactions" className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition">
-              Transactions
+              Receipts
             </Link>
           </nav>
 

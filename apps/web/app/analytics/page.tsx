@@ -64,15 +64,15 @@ export default function AnalyticsPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-white/[0.07]">
           <div>
             <div className="flex items-center gap-2 mb-2 font-mono text-[11px] text-slate-400">
-              <span className="uppercase tracking-wider font-semibold">Ledger & Economics</span>
+              <span className="uppercase tracking-wider font-semibold">User Account</span>
               <span className="text-white/20">/</span>
-              <span>Hedera Consensus Verified</span>
+              <span>Hedera Wallet: 0.0.11331589</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              Agent Earnings & Spending
+              My Wallet & Earnings
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-              Real-time telemetry tracking task micropayments settled via x402 on the Hedera testnet.
+              Track your token balance, what you've spent hiring agents, and what your published agents have earned completing tasks for others.
             </p>
           </div>
 
@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
                   : "bg-white/[0.03] text-slate-300 border-white/[0.08]"
               }`}
             >
-              Economics Overview
+              Wallet Summary
             </button>
             <button
               onClick={() => setTab("history")}
@@ -95,7 +95,7 @@ export default function AnalyticsPage() {
                   : "bg-white/[0.03] text-slate-300 border-white/[0.08]"
               }`}
             >
-              Settlement History
+              Task Receipts
             </button>
           </div>
         </div>
@@ -106,31 +106,31 @@ export default function AnalyticsPage() {
             {/* 4 Clean Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
               <div className="sharp-card p-5 space-y-2">
-                <span className="text-xs text-slate-400 font-medium">Total Micro-Spending</span>
+                <span className="text-xs text-slate-400 font-medium">You Spent (Hiring Agents)</span>
                 <div className="text-2xl font-bold font-mono text-white">
                   {(stats.totalSpentTinybars / 100_000_000).toFixed(4)} <span className="text-sm font-normal text-slate-400">HBAR</span>
                 </div>
-                <span className="text-[11px] text-slate-500 font-mono">3,450,000 tinybars paid</span>
+                <span className="text-[11px] text-slate-500 font-mono">Paid for completed tasks</span>
               </div>
 
               <div className="sharp-card p-5 space-y-2">
-                <span className="text-xs text-slate-400 font-medium">Total Agent Payouts</span>
+                <span className="text-xs text-slate-400 font-medium">Your Agent Earnings</span>
                 <div className="text-2xl font-bold font-mono text-emerald-400">
                   +{(stats.totalEarnedTinybars / 100_000_000).toFixed(4)} <span className="text-sm font-normal">HBAR</span>
                 </div>
-                <span className="text-[11px] text-slate-500 font-mono">2,850,000 tinybars earned</span>
+                <span className="text-[11px] text-slate-500 font-mono">Earned by your published agent</span>
               </div>
 
               <div className="sharp-card p-5 space-y-2">
-                <span className="text-xs text-slate-400 font-medium">Subcontracts Awarded</span>
+                <span className="text-xs text-slate-400 font-medium">Tasks Delegated</span>
                 <div className="text-2xl font-bold font-mono text-white">{stats.activeSubcontracts}</div>
-                <span className="text-[11px] text-slate-500">Autonomous A2A handoffs</span>
+                <span className="text-[11px] text-slate-500">Autonomous subtasks completed</span>
               </div>
 
               <div className="sharp-card p-5 space-y-2">
-                <span className="text-xs text-slate-400 font-medium">Settlement Success Rate</span>
+                <span className="text-xs text-slate-400 font-medium">Success Rate</span>
                 <div className="text-2xl font-bold font-mono text-sky-400">{stats.successRate}%</div>
-                <span className="text-[11px] text-emerald-400 font-mono">0 SLA violations</span>
+                <span className="text-[11px] text-emerald-400 font-mono">Accurate deliverables verified</span>
               </div>
             </div>
 
