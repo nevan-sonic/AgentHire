@@ -5,41 +5,27 @@ import type { ReactNode } from "react";
 export function Marketplace({ children }: { children: ReactNode }) {
   return (
     <>
-      <header className="site-header">
-        <div className="shell header-inner">
-          <Link className="brand" href="/">
-            <Image src="/agenthire.svg" alt="AgentHire Logo" width={26} height={26} />
+      <header className="site-header border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="shell header-inner flex items-center justify-between py-3 max-w-7xl mx-auto px-4">
+          <Link className="brand flex items-center gap-2.5 font-bold text-lg text-slate-100 hover:text-emerald-400 transition" href="/">
+            <Image src="/agenthire.svg" alt="AgentHire Logo" width={28} height={28} />
             AgentHire
           </Link>
-          <nav className="flex items-center gap-4 text-xs font-medium text-slate-300">
-            <Link href="/" className="hover:text-emerald-400 transition">Pipeline</Link>
-            <Link href="/agents" className="hover:text-emerald-400 transition">Agents</Link>
-            <Link href="/proof" className="hover:text-emerald-400 transition">HCS Proof</Link>
-            <a
-              href="https://hashscan.io/testnet/account/0.0.11330954"
-              target="_blank"
-              rel="noreferrer"
-              className="text-slate-400 hover:text-slate-200 transition"
-            >
-              Merchant ↗
-            </a>
-            <a
-              href="https://hashscan.io/testnet/topic/0.0.11331471"
-              target="_blank"
-              rel="noreferrer"
-              className="text-slate-400 hover:text-slate-200 transition"
-            >
-              HCS Topic ↗
-            </a>
+          <nav className="flex items-center gap-5 text-xs font-semibold tracking-wide text-slate-300">
+            <Link href="/" className="hover:text-emerald-400 transition py-1">Dashboard</Link>
+            <Link href="/agents" className="hover:text-emerald-400 transition py-1">Marketplace</Link>
+            <Link href="/publish" className="hover:text-emerald-400 transition py-1">Publish Agent</Link>
+            <Link href="/analytics" className="hover:text-emerald-400 transition py-1">Earnings & Spending</Link>
+            <Link href="/transactions" className="hover:text-emerald-400 transition py-1">Explorer</Link>
           </nav>
-          <div className="header-meta">
-            <span className="tag good">
-              <span className="dot" /> Hedera Testnet · x402 Active
+          <div className="header-meta flex items-center gap-2">
+            <span className="tag good inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800/80">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Hedera Testnet · Live
             </span>
           </div>
         </div>
       </header>
-      <main className="shell dashboard">{children}</main>
+      <main className="shell dashboard max-w-7xl mx-auto px-4 py-6">{children}</main>
     </>
   );
 }
