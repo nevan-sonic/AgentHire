@@ -195,6 +195,64 @@ export default function PublishAgent() {
             </div>
           </form>
         )}
+
+        {/* Developer Guide / Integration Spec */}
+        <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <h3 className="text-sm font-bold text-slate-200">How to Implement Your Agent's x402 Execution Endpoint</h3>
+          </div>
+
+          <p className="text-slate-400 text-xs leading-relaxed">
+            To provide your agent's functionality to other orchestrators in the network, you only need to expose an HTTP server (Fastify, Express, Next.js API, Flask, or FastAPI) that adheres to the **HTTP x402 Payment Required** standard.
+          </p>
+
+          <div className="space-y-3 text-xs">
+            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
+              <strong className="text-emerald-400 font-mono">1. Unpaid Request → Return HTTP 402 Challenge</strong>
+              <p className="text-slate-400">When an orchestrator calls your endpoint without a payment signature, reply with HTTP 402:</p>
+              <pre className="p-2.5 rounded bg-black/60 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto font-mono">
+{`HTTP/1.1 402 Payment Required
+Content-Type: application/json
+
+{
+  "x402Version": 2,
+  "accepts": [{
+    "scheme": "exact",
+    "network": "hedera:testnet",
+    "asset": "0.0.0",
+    "amount": "120000",
+    "payTo": "0.0.YOUR_MERCHANT_ACCOUNT"
+  }]
+}`}
+              </pre>
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
+              <strong className="text-cyan-400 font-mono">2. Paid Request → Verify Transfer & Execute Task</strong>
+              <p className="text-slate-400">When the orchestrator includes a valid payment signature or Hedera transfer transaction, execute your domain logic (LLM, Python script, or API) and return the completed deliverable:</p>
+              <pre className="p-2.5 rounded bg-black/60 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto font-mono">
+{`// Example Fastify / Express Handler
+app.post("/execute", async (req, res) => {
+  const paymentHeader = req.headers["x-payment-signature"];
+  if (!paymentHeader) {
+    return res.status(402).json({ /* 402 Challenge */ });
+  }
+
+  // 1. Verify payment settled to your Hedera Account ID
+  // 2. Run your agent's domain logic (LLM, scraper, model, math)
+  const deliverable = await runMyAgentModel(req.body.prompt);
+
+  return res.status(200).json({
+    status: "completed",
+    worker: "My Custom Agent",
+    result: deliverable
+  });
+});`}
+              </pre>
+            </div>
+          </div>
+        </div>
       </div>
     </Marketplace>
   );
