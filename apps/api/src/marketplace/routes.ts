@@ -16,8 +16,8 @@ import { discover, parseJob, planJob } from "./manager.js";
 import { JobStore } from "./store.js";
 
 export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv, store = new JobStore(
-  fileURLToPath(new URL(env.WLD_ENVIRONMENT === "staging"
-    ? "../../../../.agenthire-marketplace/jobs-world-id-staging.sqlite"
+  fileURLToPath(new URL((env.WLD_ENVIRONMENT === "staging" || env.WLD_ENVIRONMENT === "sandbox")
+    ? `../../../../.agenthire-marketplace/jobs-world-id-${env.WLD_ENVIRONMENT}.sqlite`
     : "../../../../.agenthire-marketplace/jobs.sqlite", import.meta.url)),
 )) {
   const merchant = env.X402_MERCHANT_ID;
@@ -91,7 +91,7 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
       const nullifier = await verifyWorldProof(env, input.proof, nonce, signal);
       const id = "custom-" + randomUUID();
       const agent = { ...data, ensName: resolved.name, ensAddress: resolved.address, id, designation: "third-party",
-        health: "unavailable", network: "hedera:testnet", verification: env.WLD_ENVIRONMENT === "staging" ? "World ID staging proof verified" : "World ID publisher verified", checkedAt: new Date().toISOString() };
+        health: "unavailable", network: "hedera:testnet", verification: (env.WLD_ENVIRONMENT === "staging" || env.WLD_ENVIRONMENT === "sandbox") ? `World ID ${env.WLD_ENVIRONMENT} proof verified` : "World ID publisher verified", checkedAt: new Date().toISOString() };
       store.publishAgent(nonce, signal, digest(nullifier), id, agent);
       return reply.code(201).send(agent);
     } catch { return reply.code(422).send({ error: "Publishing rejected. Check the listing, ENS ownership, and World ID proof." }); }
@@ -108,8 +108,8 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
     if (created >= 20 || active.size >= 8) return reply.code(429).send({ error: "Job creation limit reached" });
     try {
       const job = parseJob(request.body);
-      if (env.WLD_ENVIRONMENT === "staging" && job.mode === "live") {
-        return reply.code(403).send({ error: "World ID staging supports preview jobs only" });
+      if ((env.WLD_ENVIRONMENT === "staging" || env.WLD_ENVIRONMENT === "sandbox") && job.mode === "live") {
+        return reply.code(403).send({ error: "World ID test environments support preview jobs only" });
       }
       store.create(job);
       created++;

@@ -4,7 +4,7 @@ import { isRecord } from "../agents/task.js";
 
 function worldEnvironment(env: NodeJS.ProcessEnv) {
   const environment = env.WLD_ENVIRONMENT ?? "production";
-  if (environment !== "production" && environment !== "staging") throw new Error("Invalid World ID environment");
+  if (environment !== "production" && environment !== "staging" && environment !== "sandbox") throw new Error("Invalid World ID environment");
   return environment;
 }
 
