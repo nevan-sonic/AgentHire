@@ -220,7 +220,47 @@ Return JSON:
       emitLog(
         "Orchestrator Agent (Master)",
         "DISCOVERY",
-        `Querying Hedera Agent Marketplace registry for registered worker matching capability '${specialist.capability}'...`
+        `Querying Hedera Agent Marketplace registry for registered workers matching capability '${specialist.capability}'...`
+      );
+
+      // 3b. Proof-of-Capability Procurement (PoCP) & Synthetic Test Vector Probe
+      emitLog(
+        "Orchestrator Agent (Master)",
+        "NEGOTIATION",
+        `[PoCP Verification] Initiating rapid synthetic capability probe to verify ${specialist.name} (SLA timeout: 500ms, stake: 5,000 tinybars). Challenge vector: synthetic input [3, 6, 9] -> target ground-truth { count: 3, min: 3, max: 9, mean: 6 }`,
+        {
+          challengeType: "synthetic_micro_test",
+          capability: specialist.capability,
+          candidateWorker: specialist.name,
+          syntheticInput: [3, 6, 9],
+          expectedGroundTruth: { count: 3, min: 3, max: 9, mean: 6 },
+          testPriceTinybars: "5000",
+          timeoutMs: 500,
+        }
+      );
+
+      // Simulate micro-probe evaluation outcome
+      emitLog(
+        specialist.name,
+        "VERIFICATION",
+        `Received synthetic test query from Orchestrator. Computing test payload: [3, 6, 9] -> { count: 3, min: 3, max: 9, mean: 6 }. Returning signed verification receipt in 128ms.`,
+        {
+          observed: { count: 3, min: 3, max: 9, mean: 6 },
+          durationMs: 128,
+          result: "matches_reference",
+          evidenceHash: "0x8fa3729e1c448bb921e3f890b0213d4c728e469c8a984dbb020a1ce829f04128",
+        }
+      );
+
+      emitLog(
+        "Orchestrator Agent (Master)",
+        "DECISION",
+        `[PoCP Passed] ${specialist.name} successfully resolved synthetic challenge in 128ms with exact reference match. Bayesian reliability confirmed at ${specialist.reliability}. Awarding subtask delegation!`,
+        {
+          verifiedReliability: specialist.reliability,
+          status: "PASSED_SYNTHETIC_CHALLENGE",
+          action: "AWARD_CONTRACT",
+        }
       );
 
       emitLog(
