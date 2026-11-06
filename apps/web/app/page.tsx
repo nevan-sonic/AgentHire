@@ -44,14 +44,14 @@ type FinalResult = {
   finalOutput: string;
 };
 
-const stageTheme: Record<AgentLogEntry["stage"], { badge: string; border: string }> = {
-  THINKING: { badge: "bg-purple-500/10 text-purple-300 border-purple-500/20", border: "border-purple-500/20" },
-  DECISION: { badge: "bg-blue-500/10 text-blue-300 border-blue-500/20", border: "border-blue-500/20" },
-  DISCOVERY: { badge: "bg-cyan-500/10 text-cyan-300 border-cyan-500/20", border: "border-cyan-500/20" },
-  NEGOTIATION: { badge: "bg-amber-500/10 text-amber-300 border-amber-500/20", border: "border-amber-500/20" },
-  PAYMENT: { badge: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", border: "border-emerald-500/20" },
-  VERIFICATION: { badge: "bg-sky-500/10 text-sky-300 border-sky-500/20", border: "border-sky-500/20" },
-  SYNTHESIS: { badge: "bg-indigo-500/10 text-indigo-300 border-indigo-500/20", border: "border-indigo-500/20" },
+const stageBadge: Record<AgentLogEntry["stage"], { badge: string; text: string }> = {
+  THINKING: { badge: "bg-purple-400/10 text-purple-300 border-purple-400/20", text: "text-purple-300" },
+  DECISION: { badge: "bg-sky-400/10 text-sky-300 border-sky-400/20", text: "text-sky-300" },
+  DISCOVERY: { badge: "bg-cyan-400/10 text-cyan-300 border-cyan-400/20", text: "text-cyan-300" },
+  NEGOTIATION: { badge: "bg-amber-400/10 text-amber-300 border-amber-400/20", text: "text-amber-300" },
+  PAYMENT: { badge: "bg-emerald-400/10 text-emerald-300 border-emerald-400/20", text: "text-emerald-300" },
+  VERIFICATION: { badge: "bg-teal-400/10 text-teal-300 border-teal-400/20", text: "text-teal-300" },
+  SYNTHESIS: { badge: "bg-indigo-400/10 text-indigo-300 border-indigo-400/20", text: "text-indigo-300" },
 };
 
 export default function Home() {
@@ -165,99 +165,100 @@ export default function Home() {
   return (
     <Marketplace>
       <div className="space-y-6">
-        {/* Top Control Header with pill action */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Title Header with Clean Alignment */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[11px] font-mono uppercase tracking-widest text-blue-400 font-semibold">Autonomous A2A Protocol</span>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Autonomous A2A Protocol</span>
               <span className="text-white/20">/</span>
-              <span className="text-[11px] text-slate-400">Micro-Settlement Pipeline</span>
+              <span className="text-[11px] text-slate-500 font-mono">Hedera Settlement Layer</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-              Agent Orchestration <span className="text-blue-400 font-medium">& Execution Mesh</span>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              Agent Orchestration & Execution Mesh
             </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+              Dispatch multi-step workflows. The Lead Orchestrator evaluates requirements, discovers specialists, executes PoCP verification challenges, and settles payments on Hedera.
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-medium">Active Hierarchy:</span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/10 backdrop-blur-md">
-              1 Master + 5 Specialists
+          <div className="flex items-center gap-2 font-mono text-xs text-slate-400 self-start sm:self-auto">
+            <span className="px-2.5 py-1 rounded bg-white/[0.04] border border-white/[0.08]">
+              Hierarchy: 1 Orchestrator + 5 Specialists
             </span>
           </div>
         </div>
 
-        {/* Dynamic Canvas-Style Grid: Left Active Agent Card + Right Prompt/Workspace Input */}
+        {/* 2-Column Sharp Layout: Left Specialist State + Right Workspace Form */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Left Column: Featured Glowing Active Specialist Card (Styled exactly like the highlighted blue glass card in reference image) */}
-          <div className="lg:col-span-4 flex flex-col justify-between p-6 glass-card-glow relative overflow-hidden">
-            {/* Subtle radial inner glow */}
-            <div className="absolute top-0 right-0 w-44 h-44 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="space-y-4 relative z-10">
+          {/* Left Column: Focused Specialist Card (Clean dark theme with subtle cyan border, matching reference image) */}
+          <div className="lg:col-span-4 sharp-card-highlight p-5 flex flex-col justify-between">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.1] flex items-center justify-center text-slate-300">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-400/10 border border-blue-400/30 text-[11px] font-mono text-blue-200">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-[11px] font-mono text-slate-300">
                   <span className={`w-1.5 h-1.5 rounded-full ${loading ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`} />
-                  <span>{loading ? "Analyzing Task" : "Ready"}</span>
+                  <span>{loading ? "Analyzing Intent" : "Idle / Standby"}</span>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-xl font-bold text-white tracking-tight">
-                  {result?.specialistAgent || (selectedCategory ? presets.find(p => p.key === selectedCategory)?.label : "Lead Orchestrator")}
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  {result?.specialistAgent || (selectedCategory ? presets.find(p => p.key === selectedCategory)?.label : "Lead Orchestrator Agent")}
                 </h3>
-                <p className="text-xs text-blue-200/70 mt-0.5">
-                  Autonomous Subcontracting & PoCP Procurement
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Dynamic Discovery & PoCP Procurement
                 </p>
               </div>
 
               <div className="space-y-2 pt-1">
-                <div className="flex items-center gap-2 text-xs text-blue-100/90 bg-black/20 p-2 rounded-lg border border-white/5">
-                  <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-2 text-xs text-slate-300 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.05]">
+                  <svg className="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>Verifiable execution SLA guarantees</span>
+                  <span>Cryptographic SLA verification</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-blue-100/90 bg-black/20 p-2 rounded-lg border border-white/5">
-                  <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-2 text-xs text-slate-300 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.05]">
+                  <svg className="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>On-chain micro-settlement over HTTP 402</span>
+                  <span>x402 Micropayments over Hedera</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-white/10 space-y-3 relative z-10">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-blue-200/70">Reliability Score</span>
-                <span className="font-mono font-semibold text-white">98.5% Bayesian</span>
+            <div className="pt-5 mt-4 border-t border-white/[0.08] space-y-3 font-mono text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 font-sans">Reliability Score</span>
+                <span className="font-semibold text-white">98.5% Bayesian</span>
               </div>
-              <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-400 to-indigo-400 h-full rounded-full transition-all duration-500" style={{ width: "98%" }} />
+              <div className="w-full bg-white/[0.05] h-1.5 rounded-full overflow-hidden">
+                <div className="bg-sky-400 h-full rounded-full transition-all duration-500" style={{ width: "98.5%" }} />
               </div>
 
-              <div className="flex items-center justify-between text-xs pt-1">
-                <span className="text-blue-200/70">Protocol Layer</span>
-                <span className="font-mono text-white text-[11px] bg-white/10 px-2 py-0.5 rounded-full border border-white/10">Hedera + Groq Llama3</span>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-slate-400 font-sans">Inference Engine</span>
+                <span className="text-slate-300 text-[11px] bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.06]">
+                  Llama-3.3-70b-versatile
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Clean Dark Glass Workspace Form (styled like central node card in reference) */}
-          <div className="lg:col-span-8 glass-panel p-6 flex flex-col justify-between space-y-5 border border-white/[0.08]">
+          {/* Right Column: Clean Workspace Form */}
+          <div className="lg:col-span-8 sharp-card p-5 sm:p-6 flex flex-col justify-between space-y-4">
             <form onSubmit={startStreamingTask} className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-300">Instruct Agent Pipeline</span>
-                  <span className="text-[10px] font-mono text-slate-500 px-2 py-0.5 rounded-full bg-white/[0.04]">Prompt Input</span>
+                  <span className="text-xs font-semibold text-white">Task Specification</span>
+                  <span className="text-[10px] font-mono text-slate-500 px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.06]">Prompt</span>
                 </div>
 
-                {/* Quick Presets as clean dark pills */}
-                <div className="hidden sm:flex items-center gap-1.5">
+                {/* Quick Presets as clean pills */}
+                <div className="flex flex-wrap items-center gap-1.5">
                   {presets.slice(0, 3).map((preset) => (
                     <button
                       key={preset.key}
@@ -269,10 +270,10 @@ export default function Home() {
                           setAttachedFile(null);
                         }
                       }}
-                      className={`text-[11px] px-2.5 py-1 rounded-full border transition cursor-pointer ${
+                      className={`text-[11px] px-2.5 py-1 rounded-full border transition cursor-pointer font-medium ${
                         selectedCategory === preset.key
-                          ? "bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/30"
-                          : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]"
+                          ? "bg-white text-slate-950 border-white shadow-sm"
+                          : "bg-white/[0.03] hover:bg-white/[0.07] text-slate-300 border-white/[0.08]"
                       }`}
                     >
                       {preset.label}
@@ -286,16 +287,16 @@ export default function Home() {
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Plan the successful deployment of our smart contract or analyze complex datasets across agents..."
+                  placeholder="Describe your objective, e.g. 'Investigate Hedera Consensus Service audit logging' or 'Analyze spreadsheet data'..."
                   rows={4}
-                  className="w-full px-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/50 text-sm leading-relaxed transition resize-none"
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/[0.09] text-white placeholder-slate-500 focus:outline-none focus:border-white/30 text-xs sm:text-sm leading-relaxed transition resize-none"
                   required
                 />
               </div>
 
               {/* Contextual File Upload Pill */}
               {showFileUpload && (
-                <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-blue-950/20 border border-blue-500/20 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs">
                   <div className="flex items-center gap-2.5">
                     <input
                       type="file"
@@ -307,16 +308,16 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="pill-secondary px-3 py-1.5 text-xs inline-flex items-center gap-1.5 cursor-pointer font-medium"
+                      className="pill-ghost text-xs cursor-pointer"
                     >
-                      <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                       </svg>
                       <span>Attach Document / Spreadsheet</span>
                     </button>
 
                     {attachedFile && (
-                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 font-mono text-[11px]">
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-white font-mono text-[11px]">
                         <span className="truncate max-w-[200px]">{attachedFile.name}</span>
                         <button
                           type="button"
@@ -328,13 +329,13 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <span className="text-[11px] text-slate-400 font-mono">Supported: .csv, .xlsx, .pdf, .docx</span>
+                  <span className="text-[11px] text-slate-500 font-mono">Supported: .csv, .xlsx, .pdf, .docx</span>
                 </div>
               )}
 
-              {/* Bottom Form Actions */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                <div className="flex items-center gap-2">
+              {/* Form Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div className="flex items-center gap-1.5">
                   {presets.slice(3).map((preset) => (
                     <button
                       key={preset.key}
@@ -346,10 +347,10 @@ export default function Home() {
                           setAttachedFile(null);
                         }
                       }}
-                      className={`text-[11px] px-2.5 py-1 rounded-full border transition cursor-pointer ${
+                      className={`text-[11px] px-2.5 py-1 rounded-full border transition cursor-pointer font-medium ${
                         selectedCategory === preset.key
-                          ? "bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/30"
-                          : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]"
+                          ? "bg-white text-slate-950 border-white shadow-sm"
+                          : "bg-white/[0.03] hover:bg-white/[0.07] text-slate-300 border-white/[0.08]"
                       }`}
                     >
                       {preset.label}
@@ -360,7 +361,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading || !prompt.trim()}
-                  className="pill-primary px-6 py-2.5 text-xs tracking-wide uppercase font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="pill-action cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -368,12 +369,12 @@ export default function Home() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                       </svg>
-                      <span>Agents Running...</span>
+                      <span>Running Pipeline...</span>
                     </>
                   ) : (
                     <>
-                      <span>Execute Task</span>
-                      <span className="text-slate-950">→</span>
+                      <span>Execute Workflow</span>
+                      <span>→</span>
                     </>
                   )}
                 </button>
@@ -383,44 +384,44 @@ export default function Home() {
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-mono">
             <strong>Error:</strong> {error}
           </div>
         )}
 
-        {/* Live Reasoning Logs & Synthetic Capability Trace */}
+        {/* Live Logs Stream */}
         {(logs.length > 0 || loading) && (
-          <div className="glass-panel overflow-hidden border border-white/[0.08]">
-            <div className="px-5 py-3.5 bg-black/30 border-b border-white/[0.06] flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className={`w-2 h-2 rounded-full ${loading ? "bg-blue-400 animate-ping" : "bg-emerald-400"}`} />
-                <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wider font-mono">
-                  Autonomous Activity Stream & Negotiation Trace
+          <div className="sharp-card overflow-hidden">
+            <div className="px-5 py-3 bg-[#131822] border-b border-white/[0.06] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${loading ? "bg-sky-400 animate-ping" : "bg-emerald-400"}`} />
+                <h2 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">
+                  Autonomous Activity & Negotiation Trace
                 </h2>
               </div>
               <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
                 <span>{logs.length} events logged</span>
-                {loading && <span className="text-blue-400 font-semibold animate-pulse">· Delegating</span>}
+                {loading && <span className="text-sky-400 font-semibold animate-pulse">· Streaming</span>}
               </div>
             </div>
 
             <div
               ref={logContainerRef}
-              className="p-5 max-h-[380px] overflow-y-auto space-y-3 font-mono text-xs scroll-smooth bg-black/20"
+              className="p-5 max-h-[360px] overflow-y-auto space-y-2.5 font-mono text-xs scroll-smooth bg-black/20"
             >
               {logs.map((log, idx) => {
-                const style = stageTheme[log.stage] || stageTheme.THINKING;
+                const badge = stageBadge[log.stage] || stageBadge.THINKING;
                 return (
                   <div
                     key={idx}
-                    className={`p-3.5 rounded-xl bg-white/[0.02] border ${style.border} transition-all duration-300`}
+                    className="p-3.5 rounded-lg bg-white/[0.015] border border-white/[0.06] transition"
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${style.badge} border`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${badge.badge} border`}>
                           {log.stage}
                         </span>
-                        <span className="text-slate-200 font-semibold">{log.agent}</span>
+                        <span className="text-white font-semibold">{log.agent}</span>
                       </div>
                       <time className="text-slate-500 text-[10px]">
                         {new Date(log.timestamp).toLocaleTimeString()}
@@ -430,9 +431,9 @@ export default function Home() {
                       {log.thought}
                     </p>
 
-                    {/* Data payload (includes synthetic test query [3, 6, 9] inspection) */}
+                    {/* Data Payload Display (includes synthetic test queries) */}
                     {log.data && Object.keys(log.data).length > 0 && (
-                      <pre className="mt-2.5 p-3 rounded-lg bg-black/60 border border-white/[0.08] text-[11px] text-blue-200/90 overflow-x-auto">
+                      <pre className="mt-2.5 p-3 rounded bg-black/60 border border-white/[0.07] text-[11px] text-slate-300 overflow-x-auto">
                         {JSON.stringify(log.data, null, 2)}
                       </pre>
                     )}
@@ -441,28 +442,28 @@ export default function Home() {
               })}
 
               {loading && (
-                <div className="flex items-center gap-2 text-xs text-slate-400 py-1 pl-1 font-sans">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.2s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.4s]" />
-                  <span className="italic ml-1">Agents negotiating terms and computing deliverables...</span>
+                <div className="flex items-center gap-2 text-xs text-slate-400 py-1 font-sans">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce [animation-delay:0.4s]" />
+                  <span className="italic ml-1">Specialists collaborating and validating requirements...</span>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Deliverable & Hedera Settlement */}
+        {/* Deliverable Section */}
         {result && (
           <div className="space-y-4 animate-fade-in">
-            {/* Settlement Card */}
+            {/* Settlement Bar */}
             {result.payment && (
-              <div className="p-4 rounded-xl glass-panel border border-blue-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
+              <div className="p-4 rounded-xl sharp-card-subtle flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <strong className="text-white text-sm">x402 Micropayment Settled</strong>
-                    <span className="text-blue-300">({Number(result.payment.amountTinybars).toLocaleString()} tinybars)</span>
+                    <strong className="text-white text-sm font-sans font-semibold">x402 Micropayment Settled</strong>
+                    <span className="text-slate-400">({Number(result.payment.amountTinybars).toLocaleString()} tinybars)</span>
                   </div>
                   <div className="text-slate-400">
                     Payer: <span className="text-slate-200">{result.payment.payer}</span> · Merchant: <span className="text-slate-200">{result.payment.recipient}</span>
@@ -477,7 +478,7 @@ export default function Home() {
                     href={result.payment.explorerUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="pill-secondary px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5 hover:text-white"
+                    className="pill-ghost text-xs hover:text-white"
                   >
                     <span>View on HashScan</span>
                     <span>↗</span>
@@ -486,18 +487,18 @@ export default function Home() {
               </div>
             )}
 
-            {/* Deliverable Result */}
-            <div className="glass-panel p-6 border border-white/[0.08] space-y-4">
-              <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-                <h3 className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Deliverable Box */}
+            <div className="sharp-card p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-white/[0.07] pb-3">
+                <h3 className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 font-mono">
+                  <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
-                  Verified Final Task Deliverable
+                  Verified Task Deliverable
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 font-mono">Completed by:</span>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 font-semibold font-mono">
+                  <span className="text-xs text-slate-400 font-mono">Executed by:</span>
+                  <span className="text-xs px-2.5 py-0.5 rounded bg-white/[0.06] text-white border border-white/[0.08] font-semibold font-mono">
                     {result.specialistAgent || result.subcontractedAgent || "Specialist Agent"}
                   </span>
                 </div>
@@ -508,16 +509,16 @@ export default function Home() {
               </div>
 
               {result.sources && result.sources.length > 0 && (
-                <div className="pt-4 border-t border-white/[0.08] space-y-2.5">
+                <div className="pt-4 border-t border-white/[0.07] space-y-2.5">
                   <div className="text-xs font-semibold text-slate-300 font-mono">
-                    Retrieved Multi-Source Evidence ({result.sources.length} sources):
+                    Multi-Source Ground Truth ({result.sources.length} sources):
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
                     {result.sources.map((s, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-black/40 border border-white/[0.06] space-y-1">
-                        <div className="font-semibold text-blue-300 truncate">{s.title}</div>
+                      <div key={idx} className="p-3 rounded-lg bg-black/40 border border-white/[0.05] space-y-1">
+                        <div className="font-semibold text-slate-200 truncate">{s.title}</div>
                         <p className="text-slate-400 text-[11px] line-clamp-2">{s.excerpt}</p>
-                        <a href={s.url} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline text-[10px] truncate block">
+                        <a href={s.url} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline text-[10px] truncate block font-mono">
                           {s.url} ↗
                         </a>
                       </div>
@@ -527,12 +528,12 @@ export default function Home() {
               )}
 
               {result.computation && (
-                <div className="pt-3 border-t border-white/[0.08] flex flex-wrap gap-4 text-xs font-mono text-slate-400">
-                  <span className="text-slate-300 font-semibold">Mathematical Verification:</span>
-                  <span>Count: <strong className="text-blue-400">{result.computation.count}</strong></span>
-                  <span>Min: <strong className="text-blue-400">{result.computation.min}</strong></span>
-                  <span>Max: <strong className="text-blue-400">{result.computation.max}</strong></span>
-                  <span>Mean: <strong className="text-blue-400">{result.computation.mean.toFixed(2)}</strong></span>
+                <div className="pt-3 border-t border-white/[0.07] flex flex-wrap gap-4 text-xs font-mono text-slate-400">
+                  <span className="text-slate-200 font-semibold font-sans">Mathematical Verification:</span>
+                  <span>Count: <strong className="text-white">{result.computation.count}</strong></span>
+                  <span>Min: <strong className="text-white">{result.computation.min}</strong></span>
+                  <span>Max: <strong className="text-white">{result.computation.max}</strong></span>
+                  <span>Mean: <strong className="text-white">{result.computation.mean.toFixed(2)}</strong></span>
                 </div>
               )}
             </div>

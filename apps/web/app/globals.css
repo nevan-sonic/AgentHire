@@ -2,92 +2,95 @@
 
 :root {
   color-scheme: dark;
-  --bg-space: #07090e;
-  --card-dark: rgba(16, 21, 30, 0.72);
-  --card-glow-blue: rgba(26, 45, 82, 0.65);
-  --accent-blue: #3b82f6;
-  --accent-glow: #60a5fa;
-  --pill-active: #ffffff;
-  --pill-active-text: #05070b;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
+  --bg-deep: #0a0c10;
+  --card-surface: #10141b;
+  --card-elevated: #151a24;
+  --border-clean: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(255, 255, 255, 0.2);
+  --accent-cyan: #38bdf8;
+  --accent-cyan-subtle: rgba(56, 189, 248, 0.12);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
   --text-dim: #64748b;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-glass: rgba(147, 197, 253, 0.15);
 }
 
 body {
-  background-color: var(--bg-space);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.18) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 40%),
-    radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.8) 0px, transparent 70%);
-  background-attachment: fixed;
-  color: var(--text-primary);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
 }
 
-/* Glassmorphism Surface Base */
-.glass-panel {
-  background: var(--card-dark);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 1.25rem;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+/* Sharp, precise card borders without heavy muddy blurs */
+.sharp-card {
+  background-color: var(--card-surface);
+  border: 1px solid var(--border-clean);
+  border-radius: 14px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
 }
 
-/* Glowing Featured Active Agent Card */
-.glass-card-glow {
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.45) 0%, rgba(15, 23, 42, 0.85) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(96, 165, 250, 0.35);
-  border-radius: 1.5rem;
-  box-shadow: 0 0 45px -5px rgba(59, 130, 246, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+.sharp-card-highlight {
+  background: linear-gradient(180deg, #16202e 0%, #10151f 100%);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
 }
 
-/* Frosted Dim Inactive Card */
-.glass-card-frosted {
-  background: rgba(15, 20, 28, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 1.25rem;
-  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.4);
+.sharp-card-subtle {
+  background-color: var(--card-elevated);
+  border: 1px solid var(--border-clean);
+  border-radius: 14px;
 }
 
-/* Floating Clean Action Pill (Like "Save", "Submit") */
-.pill-primary {
-  background: #ffffff;
-  color: #05070b;
+/* Precise high-contrast action pill */
+.pill-action {
+  background-color: #ffffff;
+  color: #090d14;
   font-weight: 600;
   border-radius: 9999px;
-  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.25);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 8px 18px;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.pill-primary:hover:not(:disabled) {
+.pill-action:hover:not(:disabled) {
+  background-color: #f1f5f9;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
+}
+.pill-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.pill-secondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.pill-ghost {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 9999px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.pill-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
+.pill-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 
-/* Custom scrollbars for clean look */
+/* Sharp Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -97,5 +100,5 @@ body {
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.28);
 }

@@ -57,17 +57,17 @@ export default function TransactionsPage() {
     <Marketplace>
       <div className="space-y-6">
         {/* Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-white/[0.07]">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[11px] font-mono uppercase tracking-widest text-blue-400 font-semibold">Hedera Hashgraph</span>
+            <div className="flex items-center gap-2 mb-2 font-mono text-[11px] text-slate-400">
+              <span className="uppercase tracking-wider font-semibold">Hedera Hashgraph</span>
               <span className="text-white/20">/</span>
-              <span className="text-[11px] text-slate-400">Consensus Nodes</span>
+              <span>Consensus Receipts</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
               On-Chain Transaction Explorer
             </h1>
-            <p className="text-slate-400 text-xs md:text-sm mt-1 max-w-2xl">
+            <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
               Immutable ledger receipts for all autonomous agent-to-agent micropayments and task bounties verified by Hedera testnet consensus.
             </p>
           </div>
@@ -76,7 +76,7 @@ export default function TransactionsPage() {
             href="https://hashscan.io/testnet/account/0.0.11331589"
             target="_blank"
             rel="noreferrer"
-            className="pill-secondary px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5 hover:text-white"
+            className="pill-ghost text-xs hover:text-white inline-flex items-center gap-1.5"
           >
             <span>Inspect Payer 0.0.11331589</span>
             <span>↗</span>
@@ -84,17 +84,17 @@ export default function TransactionsPage() {
         </div>
 
         {/* Transactions Table Card */}
-        <div className="glass-panel overflow-hidden border border-white/[0.08]">
-          <div className="px-5 py-4 bg-black/30 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="sharp-card overflow-hidden">
+          <div className="px-5 py-3.5 bg-[#131822] border-b border-white/[0.06] flex items-center justify-between">
             <h3 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">
               Consensus Receipts ({transactions.length})
             </h3>
-            <span className="text-xs font-mono text-blue-400">Network: Hedera Testnet</span>
+            <span className="text-xs font-mono text-slate-400">Network: Hedera Testnet</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-black/20 text-slate-400 border-b border-white/[0.06]">
+              <thead className="bg-black/30 text-slate-400 border-b border-white/[0.06]">
                 <tr>
                   <th className="px-5 py-3 font-medium">Transaction ID</th>
                   <th className="px-5 py-3 font-medium">Type</th>
@@ -107,13 +107,13 @@ export default function TransactionsPage() {
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-white/[0.02] transition">
+                  <tr key={tx.id} className="hover:bg-white/[0.015] transition">
                     <td className="px-5 py-3.5 font-bold text-white">
                       <span className="truncate max-w-[200px] block">{tx.id}</span>
                       <span className="text-[10px] text-slate-500 font-normal">{tx.memo}</span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-white/[0.06] text-slate-300 border border-white/[0.08]">
                         {tx.type}
                       </span>
                     </td>
@@ -126,7 +126,7 @@ export default function TransactionsPage() {
                         href={tx.hashScanUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 font-semibold"
+                        className="text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 font-semibold"
                       >
                         <span>HashScan</span>
                         <span>↗</span>
