@@ -11,7 +11,10 @@ export class GroqClient {
   private reserved = 0;
   constructor(private readonly env: NodeJS.ProcessEnv,
     private readonly usage: (record: object) => void,
-    private readonly transport = fetch) {}
+    private readonly transport = fetch, prior: { requests: number; tokens: number } = { requests: 0, tokens: 0 }) {
+    this.requests = prior.requests;
+    this.reserved = prior.tokens;
+  }
 
   async json(role: "MANAGER" | "WORKER" | "VERIFIER", instruction: string, data: unknown) {
     const key = this.env.GROQ_API_KEY?.trim();

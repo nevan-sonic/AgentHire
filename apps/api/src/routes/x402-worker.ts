@@ -42,6 +42,8 @@ export function registerX402Worker(app: FastifyInstance, options: WorkerPaymentO
 type PaidResource = {
   quote: PaymentRequired;
   verifyBinding?: (payload: PaymentPayload, payer: string) => Promise<boolean>;
+  verifySettlement?(transactionId: string, payer: string): Promise<boolean>;
+  claimIntent?(): Promise<boolean>;
   execute(): Promise<unknown>;
 };
 
@@ -53,7 +55,7 @@ export function registerPaidResource(app: FastifyInstance, options: WorkerPaymen
     reply.header("Cache-Control", "no-store");
     const prepared = resource.prepare(request.body);
     if (!prepared) return reply.code(400).send({ error: "Invalid worker input" });
-    const { quote, verifyBinding, execute } = prepared;
+    const { quote, verifyBinding, claimIntent, verifySettlement, execute } = prepared;
     const [requirements] = quote.accepts;
     const header = request.headers["payment-signature"];
     if (header === undefined) {
@@ -87,6 +89,7 @@ export function registerPaidResource(app: FastifyInstance, options: WorkerPaymen
       if (!await claimPayment(transactionId)) {
         return reply.code(409).send({ error: "Payment proof already consumed or awaiting reconciliation" });
       }
+      if (claimIntent && !await claimIntent()) return reply.code(409).send({ error: "Payment intent already consumed" });
       const settled = await facilitator.settle(payload, requirements);
       if (verifyBinding && settled.success === false && settled.errorReason === "insufficient_funds") {
         return reply.code(402).send({ error: "Payment rejected" });
@@ -96,6 +99,7 @@ export function registerPaidResource(app: FastifyInstance, options: WorkerPaymen
         return reply.code(502).send({ error: "Payment settlement not confirmed" });
       }
 
+      if (verifySettlement && !await verifySettlement(transactionId, payer)) return reply.code(502).send({ error: "Settlement is pending independent confirmation" });
       reply.header("PAYMENT-RESPONSE", encodePaymentResponseHeader({
         success: true, transaction: transactionId, network: X402_NETWORK,
         payer: verified.payer, amount: requirements.amount,

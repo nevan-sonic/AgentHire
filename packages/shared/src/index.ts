@@ -131,7 +131,7 @@ export type MissionEnvelope = {
   inputArtifacts: string[];
   expectedOutput: "source-collection" | "report" | "verification";
   acceptance: string[];
-  authorization: { maxSpendTinybars: "0"; tools: ("github.search" | "github.read")[]; maxDelegationDepth: 0; expiresAt: string };
+  authorization: { maxSpendTinybars: string; tools: ("github.search" | "github.read")[]; maxDelegationDepth: 0; expiresAt: string };
   inputDigest: string;
   idempotencyKey: string;
   status: "ready" | "running" | "completed" | "failed";

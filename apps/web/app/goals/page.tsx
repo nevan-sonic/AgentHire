@@ -8,6 +8,7 @@ import { Marketplace } from "../marketplace";
 
 export default function Goals() {
   const router = useRouter();
+  const [mode, setMode] = useState("direct");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [recent, setRecent] = useState<{ id: string; objective: string; status: string }[]>([]);
@@ -22,7 +23,9 @@ export default function Goals() {
     setBusy(true);
     setError("");
     try {
-      const body = Object.fromEntries(new FormData(event.currentTarget));
+      const form = new FormData(event.currentTarget);
+      const body = { objective: form.get("objective"), deliverable: form.get("deliverable"),
+        ...(mode === "procurement" ? { procurement: { budget: form.get("budget"), maxTest: form.get("maxTest"), penalty: form.get("penalty") } } : {}) };
       const response = await fetch("/api/marketplace/goals", { method: "POST", signal: AbortSignal.timeout(5000),
         headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       const result = await response.json();
@@ -38,7 +41,16 @@ export default function Goals() {
       <label>Goal description<textarea name="objective" required maxLength={2000} rows={5}
         placeholder="Compare three open-source AI agent frameworks for a small startup" /></label>
       <label>Desired deliverable<input name="deliverable" required maxLength={300} placeholder="A cited recommendation report" /></label>
-      <p className="muted">Research goals use Groq when the server enables inference. Goal text is sent to Groq and search terms to GitHub. The blockchain spending allowance is zero.</p>
+      <label>Execution mode<select value={mode} onChange={event => setMode(event.target.value)}>
+        <option value="direct">Direct research · zero HBAR</option>
+        <option value="procurement">Procurement preview · operator approval required to spend</option>
+      </select></label>
+      {mode === "procurement" && <div className="two">
+        <label>Goal budget (tinybars)<input name="budget" type="number" min={1} max={9999999} defaultValue={250000} required /></label>
+        <label>Test ceiling (tinybars)<input name="maxTest" type="number" min={0} max={9999999} defaultValue={5000} required /></label>
+        <label>Failure penalty (tinybars)<input name="penalty" type="number" min={0} max={9999999} defaultValue={160000} required /></label>
+      </div>}
+      <p className="muted">Research goals use Groq when the server enables inference. Goal text is sent to Groq and search terms to GitHub. Creating a goal grants zero blockchain spending authority.</p>
       <button className="primary" disabled={busy}>{busy ? "Creating…" : "Create Goal"}</button>
       {error && <p role="alert">{error}</p>}
     </form>

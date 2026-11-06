@@ -60,8 +60,8 @@ export async function requestWorkerQuote(policy: SpendingPolicy, values: number[
   return requestResourceQuote(policy, { values });
 }
 
-export async function requestResourceQuote(policy: SpendingPolicy, input: object) {
-  const response = await fetch(policy.endpoint, {
+export async function requestResourceQuote(policy: SpendingPolicy, input: object, transport = fetch) {
+  const response = await transport(policy.endpoint, {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
     redirect: "error", signal: AbortSignal.timeout(5_000),
   });
@@ -113,6 +113,7 @@ export async function payForResource(
     authorize(quote: PaymentRequired): Promise<void>;
     submitted(transactionId: string): Promise<void>;
     settled(transactionId: string): Promise<void>;
+    timeoutMs?: number;
   },
 ) {
   if (!validPayer(payer, policy.merchant)) throw new Error("Payer, merchant, and facilitator must be distinct");
@@ -137,7 +138,7 @@ export async function payForResource(
   try {
     const response = await fetch(policy.endpoint, {
       method: "POST", headers: { "content-type": "application/json", "PAYMENT-SIGNATURE": signature },
-      body: JSON.stringify(input), redirect: "error", signal: AbortSignal.timeout(30_000),
+      body: JSON.stringify(input), redirect: "error", signal: AbortSignal.timeout(hooks?.timeoutMs ?? 30_000),
     });
     const header = response.headers.get("payment-response");
     if (!response.ok || !header || header.length > 8_192) {

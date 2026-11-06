@@ -548,4 +548,10 @@ The manager refreshes and matches the approved plan, uses the official x402 faci
 
 Open [Create a Goal](http://localhost:3000/goals) with the existing local API and frontend running. Describe a public repository research objective and the expected report. Configure server-side Groq credentials and opt in to usage as described in the [Groq guide](docs/architecture/GROQ_INTEGRATION.md). The goal workspace shows the validated plan, assigned missions, real provider and retrieval activity, linked artifacts, and a downloadable cited report record. Goal history and artifacts persist in `.agenthire-marketplace/goals.sqlite`.
 
-This research workflow sends the goal to Groq and derived search terms to GitHub. Use public, non-sensitive objectives. Every research mission has zero HBAR authority. The [statistics marketplace](http://localhost:3000/agents) and [historical proof](http://localhost:3000/proof) remain available independently. See the [architecture](docs/architecture/AGENT_ECONOMY.md) and [NevoraX audit](docs/architecture/NEVORAX_REUSE_AUDIT.md) for scope and pending integrations.
+This research workflow sends the goal to Groq and derived search terms to GitHub. Use public, non-sensitive objectives. Direct research and procurement preview have zero HBAR authority. The [statistics marketplace](http://localhost:3000/agents) and [historical proof](http://localhost:3000/proof) remain available independently. See the [architecture](docs/architecture/AGENT_ECONOMY.md) and [NevoraX audit](docs/architecture/NEVORAX_REUSE_AUDIT.md) for scope and pending integrations.
+
+### Competitive paid research
+
+Start both research workers with `pnpm --filter @agenthire/api research:worker quick-research` and `pnpm --filter @agenthire/api research:worker deep-research`. Choose **Procurement preview** on the Goals page. After authorized Groq planning, the goal displays actual worker bids, PoCP and the reviewed payment branches. An authenticated operator can read the preflight and, only with separate approval, resume the goal with bounded x402 and HCS authority.
+
+See [paid research procurement](docs/architecture/PAID_RESEARCH_PROCUREMENT.md) for the policy fields, verification rules and operator commands. The first live paid research settlement remains pending.

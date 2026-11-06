@@ -3,9 +3,19 @@
 import { useEffect, useState } from "react";
 import type { GoalStep, MissionEnvelope } from "@agenthire/shared";
 
-type Event = { id: number; kind: string; at: string; detail: { reason?: string } };
+type Event = { id: number; kind: string; at: string; detail: { reason?: string; explorer?: string; transactionId?: string; amount?: string; worker?: string; buyer?: string; payer?: string; merchant?: string; sequence?: string; consensusTimestamp?: string; feeTinybars?: string; eventType?: string; evidenceHash?: string; passed?: boolean } };
 type Artifact = { id: string; missionId: string; type: string; content: unknown; hash: string; verification: string };
 type Goal = { objective: string; deliverable: string; status: string; rootMissionId: string;
+  procurement?: { budget: string; maxTest: string; auditStatus?: string; plan?: {
+    planHash: string;
+    bids: { bidId: string; workerId: string; priceTinybars: string; expiresAt: string; merchant: string }[];
+    decision: { action: string; reason: string; baseline: string; branches: { pass: string; fail: string }; testPrice: string;
+      priors: { worker: string; alpha: number; beta: number }[];
+      valuation?: { netValueOfInformationTinybars?: { numerator: string; denominator: string }; expectedLossTinybars?: { numerator: string; denominator: string } };
+    };
+  } };
+  ledger?: { scope: { total: string; parentAllocation: string; childAllocation: string; maxAuditFee: string }; reserved: string;
+    settled: string; available: string; released: string; unallocatedGoal: string; unallocatedParent: string; sponsoredFees: string } | null;
   plan: GoalStep[]; missions: MissionEnvelope[]; artifacts: Artifact[]; events: Event[] };
 
 function download(artifact: Artifact) {
@@ -55,6 +65,9 @@ export function GoalWorkspace({ id }: { id: string }) {
     return () => { controller.abort(); stream?.close(); };
   }, [id]);
   if (!goal) return <p role={error ? "alert" : "status"}>{error || "Loading saved goal…"}</p>;
+  const plan = goal.procurement?.plan;
+  const ledger = goal.ledger;
+  const moneyEvents = goal.events.filter(event => /^(research\.(payment|audit|observation)\.)/.test(event.kind) && event.kind !== "research.audit.manifest");
   const mission = goal.missions.find(entry => entry.missionId === selected);
   return <>
     <p className="eyebrow">Goal workspace</p><h1>Research goal</h1>
@@ -80,11 +93,54 @@ export function GoalWorkspace({ id }: { id: string }) {
         </details>)}
       </section>
       <section className="panel work-column"><h2>Activity and budget</h2>
-        <p>Blockchain spending allowance <strong>0 tinybars</strong></p>
+        {ledger ? <dl className="budget">
+          <div><dt>Goal authorized</dt><dd>{ledger.scope.total} tinybars</dd></div>
+          <div><dt>Parent allocation</dt><dd>{ledger.scope.parentAllocation}</dd></div>
+          <div><dt>Child allocation</dt><dd>{ledger.scope.childAllocation}</dd></div>
+          <div><dt>Reserved / settled</dt><dd>{ledger.reserved} / {ledger.settled}</dd></div>
+          <div><dt>Unallocated goal / parent</dt><dd>{ledger.unallocatedGoal} / {ledger.unallocatedParent}</dd></div>
+          <div><dt>Released / available</dt><dd>{ledger.released} / {ledger.available}</dd></div>
+          <div><dt>Actual sponsored fees</dt><dd>{ledger.sponsoredFees}</dd></div>
+          <div><dt>HCS fee ceiling</dt><dd>{ledger.scope.maxAuditFee}</dd></div>
+        </dl> : <p>Authorized blockchain spending <strong>0 tinybars</strong></p>}
         <ol className="activity">{goal.events.map(event => <li key={event.id}>
           <strong>{event.kind}</strong>{event.detail.reason && <p role="alert">{event.detail.reason}</p>}
         </li>)}</ol>
       </section>
     </div>
+    {plan && <section className="section two">
+      <article className="panel work-column">
+        <h2>Competing research bids</h2>
+        {plan.bids.map(bid => <div key={bid.bidId} className="decision-box">
+          <strong>{bid.workerId} · {bid.priceTinybars} tinybars</strong>
+          <p>web.research · merchant {bid.merchant}</p>
+          <p>Expires <time dateTime={bid.expiresAt}>{new Date(bid.expiresAt).toLocaleString()}</time></p>
+          {plan.decision.priors.filter(prior => prior.worker === bid.workerId).map(prior => <small key={prior.worker}>Model Beta({prior.alpha}, {prior.beta})</small>)}
+        </div>)}
+        <h3>PoCP · {plan.decision.action}</h3>
+        <p>{plan.decision.reason.replaceAll("_", " ")}</p>
+        <p>Test price {plan.decision.testPrice} tinybars · baseline {plan.decision.baseline}</p>
+        <p>Hire branches · pass {plan.decision.branches.pass} · fail {plan.decision.branches.fail}</p>
+        {plan.decision.valuation?.netValueOfInformationTinybars && <p>Net value {plan.decision.valuation.netValueOfInformationTinybars.numerator}/{plan.decision.valuation.netValueOfInformationTinybars.denominator} tinybars</p>}
+        {plan.decision.valuation?.expectedLossTinybars && <p>Expected loss with test {plan.decision.valuation.expectedLossTinybars.numerator}/{plan.decision.valuation.expectedLossTinybars.denominator} tinybars</p>}
+        {goal.status === "awaiting_authorization" && <p role="status">Reviewed plan awaits authenticated operator approval.</p>}
+        <details><summary>Plan SHA-256</summary><code className="wrap">{plan.planHash}</code></details>
+      </article>
+      <article className="panel work-column">
+        <h2>Payments and HCS evidence</h2>
+        <p>HCS status · {goal.procurement?.auditStatus ?? "no publication"}</p>
+        {!moneyEvents.length && <p className="muted">No payment or publication records.</p>}
+        {moneyEvents.map(event => <details key={event.id}>
+          <summary>{event.kind} {event.detail.eventType}</summary>
+          {event.detail.buyer && <p>Buyer {event.detail.buyer} · worker {event.detail.worker} · payer {event.detail.payer} · merchant {event.detail.merchant}</p>}
+          {event.detail.amount && <p>{event.detail.amount} tinybars</p>}
+          {event.detail.transactionId && <code className="wrap">{event.detail.transactionId}</code>}
+          {event.detail.explorer?.startsWith("https://hashscan.io/testnet/") && <p><a href={event.detail.explorer}>HashScan transaction ↗</a></p>}
+          {event.detail.feeTinybars && <p>Network fee {event.detail.feeTinybars} tinybars</p>}
+          {event.detail.sequence && <p>Sequence {event.detail.sequence} · {event.detail.consensusTimestamp}</p>}
+          {event.detail.evidenceHash && <p className="wrap">Observation {event.detail.passed ? "pass" : "fail"} · {event.detail.evidenceHash}</p>}
+        </details>)}
+      </article>
+    </section>}
   </>;
 }

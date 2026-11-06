@@ -17,6 +17,8 @@
     "pocp:paid-demo": "tsx src/cli/paid-pocp-demo.ts",
     "procurement:complete": "tsx src/cli/procurement-complete.ts",
     "marketplace:operator": "tsx src/marketplace/operator.ts",
+    "research:operator": "tsx src/goals/research-operator.ts",
+    "research:worker": "tsx src/goals/research-worker-main.ts",
     "worker": "tsx src/marketplace/worker-main.ts",
     "audit:publish": "tsx src/cli/audit-publish.ts"
   },

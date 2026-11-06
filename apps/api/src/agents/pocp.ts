@@ -8,7 +8,8 @@ import { integerIn, tinybars } from "./task.js";
 import { compareWorkerIds } from "./workers.js";
 import type { WorkerAdapter } from "./workers.js";
 
-type Candidate = { bid: ProcurementBid; reliability: Beta };
+type ScoredBid = Pick<ProcurementBid, "workerId" | "priceTinybars" | "reliabilityBps" | "expiresAt" | "estimatedLatencyMs">;
+type Candidate<B extends ScoredBid> = { bid: B; reliability: Beta };
 const SCALE = 10_000n;
 
 export type PaidTestResult = {
@@ -22,28 +23,29 @@ export type PaidTestResult = {
   reason?: string;
 };
 
-export type PaidTestExecutor = {
+export type PaidTestExecutor<B extends ScoredBid = ProcurementBid> = {
   overheadMs: number;
   planningOnly?: boolean;
-  run(test: CapabilityTest, bid: ProcurementBid, finalHireReserve: bigint): Promise<PaidTestResult>;
+  run(test: CapabilityTest, bid: B, finalHireReserve: bigint): Promise<PaidTestResult>;
 };
 
-export async function adaptiveProcurement(
-  task: ProcurementTask,
-  bids: ProcurementBid[],
-  workers: WorkerAdapter[],
+export async function adaptiveProcurement<B extends ScoredBid>(
+  task: Pick<ProcurementTask, "taskId" | "pocp" | "maxBudgetTinybars" | "minimumReliabilityBps">,
+  bids: B[],
+  workers: { profile: Pick<WorkerAdapter["profile"], "workerId">; capabilityTest?: WorkerAdapter["capabilityTest"] }[],
   deadlineAt: number,
   now: () => number,
-  executor?: PaidTestExecutor,
+  executor?: PaidTestExecutor<B>,
+  priorFor = (bid: B): Beta => assumedPrior(bid.reliabilityBps),
 ) {
   if (!task.pocp) throw new Error("PoCP requires a failure penalty");
   const penalty = BigInt(task.pocp.failurePenaltyTinybars);
   const budget = BigInt(task.maxBudgetTinybars);
   const noHireLoss = fraction(budget + penalty + 1n);
-  const candidates = bids.map((bid) => ({ bid, reliability: assumedPrior(bid.reliabilityBps) }));
+  const candidates = bids.map((bid) => ({ bid, reliability: priorFor(bid) }));
   const timestamp = now();
 
-  function hires(choices: Candidate[], available: bigint, at: number) {
+  function hires(choices: Candidate<B>[], available: bigint, at: number) {
     return choices.flatMap(({ bid, reliability }) => {
       const amount = BigInt(bid.priceTinybars);
       const { pass, fail } = predictive(reliability);

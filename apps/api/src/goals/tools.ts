@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isRecord } from "../agents/task.js";
 
-export type Source = { id: string; url: string; repository: string; excerpt: string };
+export type Source = { id: string; url: string; repository: string; excerpt: string; retrievedAt: string };
 const repository = /^[a-z0-9_.-]{1,80}\/[a-z0-9_.-]{1,100}$/i;
 
 export async function readBounded(response: Response, limit: number) {
@@ -57,7 +57,7 @@ export class ResearchTools {
       if (bytes.toString("base64") !== encoded || blob !== result.sha) throw new Error("README blob integrity mismatch");
       const excerpt = bytes.toString("utf8").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 950);
       if (excerpt.length < 40) throw new Error("Repository has insufficient source evidence");
-      return { id: result.sha, url: `https://github.com/${input}`, repository: input, excerpt };
+      return { id: result.sha, url: `https://github.com/${input}`, repository: input, excerpt, retrievedAt: new Date().toISOString() };
     }
     throw new Error("Unknown tool");
   }
