@@ -412,7 +412,26 @@ For a separately authorized live test, configure the existing x402 merchant and 
 
 The attempt journal records `planned`, `quoted`, `authorized`, and `submitted` before the associated actions advance. Facilitator confirmation records `settled`. A matching Mirror Node transfer advances it to `verified`. Definite rejection reports `failed`, and an ambiguous submission reports `uncertain` and protects the test amount as a reservation. A settled payment with delayed indexing remains settled pending independent verification. The ignored `.agenthire-x402/` journal prevents another attempt for the same task across CLI restarts. Keep the journal and reconcile the recorded transaction before any further authorization.
 
-The manager charges live test spend only after settlement confirmation and rechecks final-hire affordability. Pending HCS records include a `PAYMENT_SETTLED` reference when applicable, without private input or signed payment credentials. Live paid PoCP settlement has not yet been verified.
+The manager charges live test spend only after settlement confirmation and rechecks final-hire affordability. Pending HCS records include a `PAYMENT_SETTLED` reference when applicable, without private input or signed payment credentials.
+
+The manager chose **TEST** for `paid-pocp-live-001` because the estimated net value was **23,000 tinybars**. The official facilitator settled one payment on Hedera testnet before the Economy adapter released its output. The Mirror Node independently confirmed `SUCCESS`, the payer debit, the merchant credit, and the sponsored fee.
+
+| Field | Verified result |
+| --- | --- |
+| Worker tested | Economy |
+| Payment | 5,000 tinybars (0.00005 HBAR) |
+| Payer | `0.0.11331589` |
+| Merchant | `0.0.11330954` |
+| Settlement transaction | [`0.0.9185802@1793924857.289452104`](https://hashscan.io/testnet/transaction/0.0.9185802-1793924857-289452104) |
+| Sponsored network fee | 0.00295981 HBAR, charged to `0.0.9185802` |
+| Test input | `[3,6,9]` |
+| Worker output | `{"count":3,"min":3,"max":9,"mean":7}` |
+| Independent evaluation | **FAIL**. The expected mean was 6. |
+| Evidence SHA-256 | `501649a83faea80bb75486ec93978d7401a11a9a96963b5188171577df9d2867` |
+| Economy prior | Beta(1.2, 0.8), 60% |
+| Economy posterior | Beta(1.2, 1.8), 40% |
+
+The failed test changed the final selection from Economy to **Balanced**. After the settled test payment, **995,000 tinybars** remained. Balanced's **750,000-tinybar** bid fits the protected reserve and would leave **245,000 tinybars** after a future hire. The final hire is planned and unpaid. The HCS records remain pending.
 
 ## References
 
