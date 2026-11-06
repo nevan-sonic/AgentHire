@@ -44,7 +44,10 @@ export function createWorker(seed: Seed, env: NodeJS.ProcessEnv, workerOrigin = 
   });
   const facilitator = new HTTPFacilitatorClient({ url: X402_FACILITATOR, timeoutMs: 12_000 });
   const mirror = loadHederaMirrorNodeUrl(env);
-  const claimPayment = filePaymentClaims(fileURLToPath(new URL("../../../../.agenthire-x402/", import.meta.url)));
+  const claimsDirectory = env.MARKETPLACE_WORKER_CLAIMS_DIR?.trim();
+  const claimPayment = env.RENDER === "true" && !claimsDirectory
+    ? async () => { throw new Error("Hosted worker requires persistent payment claim storage"); }
+    : filePaymentClaims(claimsDirectory || fileURLToPath(new URL("../../../../.agenthire-x402/", import.meta.url)));
   for (const path of ["/capability-test", "/execute"]) {
     const endpoint = workerOrigin + path;
     registerPaidResource(app, { endpoint, merchant: worker.merchant, facilitator, claimPayment, path }, {
