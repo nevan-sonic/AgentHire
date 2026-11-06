@@ -10,7 +10,7 @@ import {
   confirmsSettlement, inspectPayment, matchesRequirements, validPayer, workerQuote,
 } from "../x402/protocol.js";
 import type { ClaimPayment } from "../x402/replay.js";
-import { validStatisticsInput } from "../agents/statistics.js";
+import { summarizeStatistics, validStatisticsInput } from "../agents/statistics.js";
 
 function validDataset(value: unknown): value is { values: number[] } {
   if (!value || typeof value !== "object" || Object.keys(value).length !== 1 || !("values" in value)) return false;
@@ -74,11 +74,7 @@ export function registerX402Worker(app: FastifyInstance, options: {
         success: true, transaction: transactionId, network: X402_NETWORK,
         payer: verified.payer, amount: requirements.amount,
       }));
-      const { values } = request.body;
-      return {
-        count: values.length, min: Math.min(...values), max: Math.max(...values),
-        mean: values.reduce((sum, value) => sum + value, 0) / values.length,
-      };
+      return summarizeStatistics(request.body.values);
     } catch {
       return reply.code(502).send({ error: "Payment could not be confirmed" });
     }

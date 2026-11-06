@@ -6,7 +6,7 @@ export type HealthEndpoint = {
   };
 };
 
-export type SelectionStrategy = "cheapest_eligible" | "expected_cost";
+export type SelectionStrategy = "cheapest_eligible" | "expected_cost" | "adaptive_pocp";
 
 export type ProcurementTask = {
   taskId: string;
@@ -17,6 +17,7 @@ export type ProcurementTask = {
   deadlineMs: number;
   minimumReliabilityBps: number;
   selectionStrategy: SelectionStrategy;
+  pocp?: { failurePenaltyTinybars: string };
 };
 
 export type WorkerProfile = {
@@ -64,5 +65,15 @@ export type ProcurementPaymentHandoff = {
   taskId: string;
   bidId: string;
   expiresAt: string;
+  paymentAuthorized: false;
+};
+
+export type PocpPaymentPlan = {
+  test: { testId: string; workerId: string; priceTinybars: string } | null;
+  testPaymentStatus: "not_required" | "simulated" | "pending";
+  finalWorker: ProcurementPaymentHandoff | null;
+  finalBid: ProcurementBid | null;
+  totalBudgetTinybars: string;
+  remainingAfterTestTinybars: string;
   paymentAuthorized: false;
 };

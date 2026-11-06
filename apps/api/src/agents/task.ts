@@ -22,20 +22,30 @@ export function integerIn(value: unknown, min: number, max: number): value is nu
 
 export function parseProcurementTask(value: unknown): ProcurementTask {
   if (
-    !isRecord(value) || Object.keys(value).length !== taskFields.length ||
-    Object.keys(value).some((key) => !taskFields.includes(key)) ||
+    !isRecord(value) || Object.keys(value).some((key) => !taskFields.includes(key) && key !== "pocp") ||
     typeof value.taskId !== "string" || !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(value.taskId) ||
     value.taskType !== STATISTICS || value.capability !== STATISTICS ||
     !validStatisticsInput(value.input) || !tinybars(value.maxBudgetTinybars) ||
     !integerIn(value.deadlineMs, 1, 60_000) || !integerIn(value.minimumReliabilityBps, 1, 10_000) ||
-    (value.selectionStrategy !== "cheapest_eligible" && value.selectionStrategy !== "expected_cost")
+    (value.selectionStrategy !== "cheapest_eligible" && value.selectionStrategy !== "expected_cost" &&
+      value.selectionStrategy !== "adaptive_pocp")
   ) {
     throw new Error("Invalid statistics.summary procurement task");
+  }
+  const pocp = value.pocp;
+  if (value.selectionStrategy === "adaptive_pocp") {
+    if (!isRecord(pocp) || Object.keys(pocp).length !== 1 || !tinybars(pocp.failurePenaltyTinybars)) {
+      throw new Error("Invalid PoCP failure penalty");
+    }
+  } else if (Object.hasOwn(value, "pocp")) {
+    throw new Error("PoCP options require adaptive_pocp");
   }
   return {
     taskId: value.taskId, taskType: value.taskType, capability: value.capability,
     input: [...value.input], maxBudgetTinybars: value.maxBudgetTinybars,
     deadlineMs: value.deadlineMs, minimumReliabilityBps: value.minimumReliabilityBps,
     selectionStrategy: value.selectionStrategy,
+    ...(isRecord(pocp) && tinybars(pocp.failurePenaltyTinybars)
+      ? { pocp: { failurePenaltyTinybars: pocp.failurePenaltyTinybars } } : {}),
   };
 }

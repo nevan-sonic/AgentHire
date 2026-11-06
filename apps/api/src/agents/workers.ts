@@ -1,5 +1,6 @@
 import type { ProcurementBid, ProcurementTask, WorkerProfile } from "@agenthire/shared";
 import { WORKER_PATH, X402_ASSET, X402_NETWORK } from "../x402/config.js";
+import { summarizeStatistics } from "./statistics.js";
 
 export const STATISTICS = "statistics.summary";
 export const DEMO_MERCHANT = "0.0.11330954";
@@ -11,6 +12,11 @@ export function compareWorkerIds(left: string, right: string) {
 export interface WorkerAdapter {
   profile: WorkerProfile;
   bid(task: Readonly<ProcurementTask>, signal: AbortSignal): Promise<unknown>;
+  capabilityTest?: {
+    priceTinybars: string;
+    timeoutMs: number;
+    run(input: readonly number[], signal: AbortSignal): Promise<unknown>;
+  };
 }
 
 export class WorkerRegistry {
@@ -28,18 +34,22 @@ export class WorkerRegistry {
       throw new Error("Worker endpoint must match its trusted local route");
     }
     const profile = structuredClone(worker.profile);
-    this.workers.set(workerId, { profile, bid: worker.bid.bind(worker) });
+    const test = worker.capabilityTest;
+    this.workers.set(workerId, { profile, bid: worker.bid.bind(worker),
+      capabilityTest: test && { priceTinybars: test.priceTinybars, timeoutMs: test.timeoutMs, run: test.run.bind(test) } });
   }
 
   discover(capability?: string) {
     return [...this.workers.values()].filter(({ profile }) =>
       profile.available && (capability === undefined || profile.capabilities.includes(capability)),
     ).sort((left, right) => compareWorkerIds(left.profile.workerId, right.profile.workerId))
-      .map((worker) => ({ ...worker, profile: structuredClone(worker.profile) }));
+      .map((worker) => ({ ...worker, profile: structuredClone(worker.profile),
+        capabilityTest: worker.capabilityTest && { ...worker.capabilityTest } }));
   }
 }
 
-export function createDemoRegistry(port = 3001, merchant = DEMO_MERCHANT, now = Date.now) {
+export function createDemoRegistry(port = 3001, merchant = DEMO_MERCHANT, now = Date.now,
+  fixtures: Partial<Record<string, "correct" | "incorrect" | "timeout" | "error">> = {}) {
   const registry = new WorkerRegistry();
   const seeds = [
     { workerId: "economy", displayName: "Economy Statistics Worker", description: "Low-price summary adapter",
@@ -57,6 +67,21 @@ export function createDemoRegistry(port = 3001, merchant = DEMO_MERCHANT, now = 
     };
     registry.register({
       profile,
+      capabilityTest: {
+        priceTinybars: "5000",
+        timeoutMs: 50,
+        async run(input, signal) {
+          signal.throwIfAborted();
+          const fixture = fixtures[profile.workerId];
+          if (fixture === "timeout") {
+            await new Promise<void>((_resolve, reject) =>
+              signal.addEventListener("abort", () => reject(new Error("Timed out")), { once: true }));
+          }
+          if (fixture === "error") throw new Error("Demo worker error");
+          const result = summarizeStatistics(input);
+          return fixture === "incorrect" ? { ...result, mean: result.mean + 1 } : result;
+        },
+      },
       async bid(task, signal): Promise<ProcurementBid> {
         signal.throwIfAborted();
         if (!profile.taskTypes.includes(task.taskType) || !profile.capabilities.includes(task.capability)) {

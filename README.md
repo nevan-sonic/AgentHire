@@ -144,7 +144,7 @@ The [official Hedera prize page](https://ethglobal.com/events/mumbai/prizes/hede
 - [x] First autonomous x402 payment
 - [x] Local worker discovery, structured bidding, and automatic selection
 - [ ] A2A negotiation
-- [ ] Adaptive PoCP engine
+- [x] Adaptive PoCP engine (offline simulated tests)
 - [ ] Spending controls
 - [ ] Outcome verification and recovery
 - [ ] Marketplace dashboard
@@ -351,6 +351,51 @@ The demo runs both strategies offline without credentials. The x402 handoff incl
 
 The manager returns schema-validated `JOB_CREATED`, `BID_SUBMITTED`, and `WORKER_SELECTED` events as pending HCS records. They contain public references and amounts. Procurement neither submits the records nor invokes the payer.
 
+### Adaptive Proof-of-Capability Procurement
+
+PoCP estimates whether buying one small test could improve the hiring decision enough to cover its price. It starts with Step 07's eligible bids and expected-cost-per-success ranking. The test decision and final hire instead minimize a consistent loss in tinybars:
+
+```text
+hireLoss(worker) = bidPrice + failurePenalty × (1 − reliability)
+testLoss(worker) = testPrice + P(pass) × bestLossAfterPass + P(fail) × bestLossAfterFail
+netValue = bestLossWithoutTest − testLoss(worker)
+```
+
+The manager assigns each worker a Beta prior with strength 2 and the assumed bid reliability as its mean. Economy starts at Beta(1.2, 0.8), Balanced at Beta(1.9, 0.1), and Premium at Beta(1.98, 0.02). A 100% bid estimate is capped at 99.99% when constructing the prior so both parameters stay positive. The predictive probability of passing is `alpha / (alpha + beta)`. A pass adds one to alpha, and a failure adds one to beta. The trace labels assumptions, the observed result, and the updated estimate separately.
+
+The manager values each available test using the budget left after its cost. Both branches recheck affordability, deadline, bid expiration, and the reliability threshold. A branch without an eligible hire uses a terminal loss of `totalBudget + failurePenalty + 1` tinybars. The manager takes only the feasible test with the highest strictly positive net value, breaking ties by lower test price and worker ID. It re-ranks hires after the observation by loss, expected cost per success, nominal price, latency, and worker ID. Prices and budgets use integer tinybars, while losses and probabilities use exact fractions.
+
+Opt in through the existing procurement endpoint:
+
+```json
+{
+  "taskId": "pocp-demo",
+  "taskType": "statistics.summary",
+  "capability": "statistics.summary",
+  "input": [2, 4, 6, 8],
+  "maxBudgetTinybars": "1000000",
+  "deadlineMs": 1000,
+  "minimumReliabilityBps": 3500,
+  "selectionStrategy": "adaptive_pocp",
+  "pocp": { "failurePenaltyTinybars": "400000" }
+}
+```
+
+The response includes the baseline hire, each candidate's valuation, the test decision, observed output, posterior, final hire, and budget projection. The evaluator compares the actual adapter output for `[3,6,9]` with a fixed reference. The evidence digest is SHA-256 of compact UTF-8 JSON in the fixed field order `input`, `observed`, `passed`, `reason`. The observed summary uses the field order `count`, `min`, `max`, `mean`. Malformed outputs, errors, and timeouts count as failed observations and are represented without raw error text.
+
+```bash
+pnpm --filter @agenthire/api pocp:demo
+```
+
+| Scenario | Decision and result |
+| --- | --- |
+| Positive value | Test Economy for 5,000 tinybars. Baseline loss is 760,000 and expected test loss is 737,000, so net value is 23,000. A pass raises Economy's mean to 11/15 and keeps it selected. |
+| Test too costly relative to the benefit | A 100,000-tinybar failure penalty yields no positive test valuation. Skip. |
+| Insufficient budget | A 600,000-tinybar budget leaves no affordable hire after the test. Skip and retain Economy. |
+| Failed test | Economy returns an incorrect mean. Its posterior falls to 2/5 and the final choice changes to Balanced. |
+
+The test is an offline simulation with a priced budget reservation. The trace reports zero committed on-chain spend and separates simulated test cost, projected hire cost, and remaining budget. The payment plan carries `paymentAuthorized: false` and marks test payment as `simulated` or `not_required`. Pending HCS records carry the test outcome and evidence hash. A future paid test needs its own x402 quote, settlement, and authorization. The model assumes the micro-test is informative about later success, and the fixture behavior and priors have no real-world calibration.
+
 ## References
 
 - [x402 protocol specification and reference implementations](https://github.com/x402-foundation/x402)
@@ -362,4 +407,4 @@ The manager returns schema-validated `JOB_CREATED`, `BID_SUBMITTED`, and `WORKER
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-The scaffold includes a landing page, testnet balance diagnostics, verified native HTS token creation, a verified HCS audit event, a verified autonomous x402 payment, and local worker discovery and selection. Live HTS association and transfer verification remain pending.
+The scaffold includes a landing page, testnet balance diagnostics, verified native HTS token creation, a verified HCS audit event, a verified autonomous x402 payment, local worker discovery, and adaptive selection with simulated capability tests. Live HTS association and transfer verification remain pending.

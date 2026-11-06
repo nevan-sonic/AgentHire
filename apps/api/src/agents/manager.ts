@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import type { ProcurementBid, ProcurementPaymentHandoff, ProcurementTask, SelectionStrategy, WorkerProfile } from "@agenthire/shared";
+import type { PocpPaymentPlan, ProcurementBid, ProcurementPaymentHandoff, ProcurementTask, SelectionStrategy, WorkerProfile } from "@agenthire/shared";
 import { createAuditEvent, serializeAuditEvent } from "../hedera/audit-event.js";
-import type { AuditPayload } from "../hedera/audit-event.js";
+import type { AuditMetadata, AuditPayload } from "../hedera/audit-event.js";
 import { X402_ASSET, X402_NETWORK } from "../x402/config.js";
 import { integerIn, isRecord, parseProcurementTask, tinybars } from "./task.js";
 import { compareWorkerIds } from "./workers.js";
 import type { WorkerAdapter, WorkerRegistry } from "./workers.js";
+import { adaptiveProcurement } from "./pocp.js";
 
 const bidFields = [
   "bidId", "taskId", "workerId", "capability", "priceTinybars", "estimatedLatencyMs",
@@ -76,11 +77,12 @@ export function compareBids(left: ProcurementBid, right: ProcurementBid, strateg
 
 function pendingAudit(
   task: ProcurementTask, eventType: AuditPayload["eventType"], timestamp: string, bid?: ProcurementBid,
+  metadata?: AuditMetadata,
 ) {
   const event = createAuditEvent({
     version: 1, eventId: createHash("sha256").update(JSON.stringify([task.taskId, eventType, bid?.workerId])).digest("hex"),
     eventType, jobId: task.taskId, agentId: "agenthire-manager", timestamp,
-    metadata: bid ? { workerId: bid.workerId, amountBaseUnits: bid.priceTinybars, amountUnit: "tinybar" } : {},
+    metadata: metadata ?? (bid ? { workerId: bid.workerId, amountBaseUnits: bid.priceTinybars, amountUnit: "tinybar" } : {}),
   });
   serializeAuditEvent(event);
   return { status: "pending" as const, event };
@@ -112,7 +114,10 @@ export async function procure(
   ].sort((a, b) => compareWorkerIds(a.workerId, b.workerId));
   const eligibleBids = bidsReceived.flatMap((receipt) => receipt.status === "eligible" ? [receipt.bid] : [])
     .sort((a, b) => compareBids(a, b, task.selectionStrategy));
-  const winningBid = eligibleBids[0] ?? null;
+  const adaptive = task.selectionStrategy === "adaptive_pocp"
+    ? await adaptiveProcurement(task, eligibleBids, discovered, start + task.deadlineMs, now) : null;
+  const winningBid = adaptive ? adaptive.winningBid : eligibleBids[0] ?? null;
+  const finalTimestamp = adaptive ? new Date(now()).toISOString() : timestamp;
   const selectedWorker = discoveredWorkers.find((worker) => worker.workerId === winningBid?.workerId) ?? null;
   const scoreBreakdown = eligibleBids.map((bid, index) => ({
     rank: index + 1, workerId: bid.workerId, priceTinybars: bid.priceTinybars,
@@ -126,22 +131,43 @@ export async function procure(
     taskId: task.taskId, input: { values: [...task.input] }, bidId: winningBid.bidId, expiresAt: winningBid.expiresAt,
     paymentAuthorized: false,
   } : null;
+  const test = adaptive?.chosenTest;
+  const observed = adaptive?.result;
+  const testMetadata: AuditMetadata | undefined = test
+    ? { workerId: test.workerId, amountBaseUnits: test.priceTinybars, amountUnit: "tinybar" } : undefined;
   const pendingAuditRecords = [
     pendingAudit(task, "JOB_CREATED", timestamp),
     ...bidsReceived.flatMap(({ bid }) => bid ? [pendingAudit(task, "BID_SUBMITTED", timestamp, bid)] : []),
-    ...(winningBid ? [pendingAudit(task, "WORKER_SELECTED", timestamp, winningBid)] : []),
+    ...(testMetadata && observed ? [
+      pendingAudit(task, "CAPABILITY_TEST_REQUESTED", timestamp, undefined, testMetadata),
+      pendingAudit(task, "CAPABILITY_TEST_COMPLETED", finalTimestamp, undefined, {
+        ...testMetadata, outcome: observed.passed ? "success" : "failure", artifactHash: observed.evidenceHash,
+      }),
+    ] : []),
+    ...(winningBid ? [pendingAudit(task, "WORKER_SELECTED", finalTimestamp, winningBid)] : []),
   ];
+  const paymentPlan: PocpPaymentPlan | null = adaptive ? {
+    test: test ? { testId: test.testId, workerId: test.workerId, priceTinybars: test.priceTinybars } : null,
+    testPaymentStatus: test ? "simulated" : "not_required",
+    finalWorker: paymentHandoff,
+    finalBid: winningBid,
+    totalBudgetTinybars: task.maxBudgetTinybars,
+    remainingAfterTestTinybars: adaptive.trace.budget.remainingAfterTestTinybars,
+    paymentAuthorized: false,
+  } : null;
 
   return {
     status: winningBid ? "selected" as const : "no_eligible_bids" as const,
     taskId: task.taskId, discoveredWorkers, bidsReceived, rejectedBids, eligibleBids,
     selectionStrategy: task.selectionStrategy, selectedWorker, winningBid, scoreBreakdown,
-    budgetRemainingTinybars: (BigInt(task.maxBudgetTinybars) - BigInt(winningBid?.priceTinybars ?? "0")).toString(),
+    budgetRemainingTinybars: adaptive?.trace.budget.projectedRemainingTinybars ??
+      (BigInt(task.maxBudgetTinybars) - BigInt(winningBid?.priceTinybars ?? "0")).toString(),
     rationale: winningBid
-      ? `${winningBid.workerId} ranked first by ${task.selectionStrategy === "expected_cost" ? "expected cost per successful task" : "nominal price"}. See the exact scores and tie-break fields.`
+      ? `${winningBid.workerId} ranked first by ${adaptive ? "procurement loss" : task.selectionStrategy === "expected_cost" ? "expected cost per successful task" : "nominal price"}. See the exact scores and tie-break fields.`
       : discoveredWorkers.length === 0 ? "No available workers match the task." : "No bids met the task requirements.",
     paymentReadiness: !paymentHandoff ? "no_selection" as const
       : options.paymentEnabled ? "requires_live_quote_and_authorization" as const : "worker_endpoint_disabled" as const,
     paymentHandoff, pendingAuditRecords,
+    ...(adaptive ? { pocp: adaptive.trace, paymentPlan } : {}),
   };
 }

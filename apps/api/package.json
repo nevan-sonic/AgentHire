@@ -12,7 +12,8 @@
     "hedera:hts-demo": "tsx src/cli/hts-demo.ts",
     "hedera:hcs-demo": "tsx src/cli/hcs-demo.ts",
     "x402:demo": "tsx src/cli/x402-demo.ts",
-    "agents:demo": "tsx src/cli/agents-demo.ts"
+    "agents:demo": "tsx src/cli/agents-demo.ts",
+    "pocp:demo": "tsx src/cli/pocp-demo.ts"
   },
   "dependencies": {
     "@agenthire/shared": "workspace:*",
