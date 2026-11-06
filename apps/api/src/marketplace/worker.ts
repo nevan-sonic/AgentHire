@@ -7,7 +7,7 @@ import { registerPaidResource } from "../routes/x402-worker.js";
 import { bindingBytes, capabilityDigest, CAPABILITY_EXTENSION, lookupPayerAccount, parseCapabilityRequest } from "../x402/capability-binding.js";
 import { X402_FACILITATOR } from "../x402/config.js";
 import { workerQuote } from "../x402/protocol.js";
-import { filePaymentClaims } from "../x402/replay.js";
+import { filePaymentClaims, postgresPaymentClaims } from "../x402/replay.js";
 import { offer, origin, parseWorkerTask, profile, testPrice } from "./protocol.js";
 import type { Seed } from "./protocol.js";
 
@@ -45,7 +45,9 @@ export function createWorker(seed: Seed, env: NodeJS.ProcessEnv, workerOrigin = 
   const facilitator = new HTTPFacilitatorClient({ url: X402_FACILITATOR, timeoutMs: 12_000 });
   const mirror = loadHederaMirrorNodeUrl(env);
   const claimsDirectory = env.MARKETPLACE_WORKER_CLAIMS_DIR?.trim();
-  const claimPayment = env.RENDER === "true" && !claimsDirectory
+  const claimsDatabase = env.MARKETPLACE_WORKER_CLAIMS_DATABASE_URL?.trim();
+  const claimPayment = claimsDatabase ? postgresPaymentClaims(claimsDatabase)
+    : env.RENDER === "true" && !claimsDirectory
     ? async () => { throw new Error("Hosted worker requires persistent payment claim storage"); }
     : filePaymentClaims(claimsDirectory || fileURLToPath(new URL("../../../../.agenthire-x402/", import.meta.url)));
   for (const path of ["/capability-test", "/execute"]) {

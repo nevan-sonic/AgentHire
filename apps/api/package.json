@@ -26,6 +26,7 @@
     "@agenthire/shared": "workspace:*",
     "@fastify/cors": "11.4.1",
     "@hiero-ledger/sdk": "2.90.1",
+    "@neondatabase/serverless": "1.2.0",
     "@worldcoin/idkit-core": "4.6.0",
     "@x402/core": "2.30.0",
     "@x402/hedera": "2.30.0",

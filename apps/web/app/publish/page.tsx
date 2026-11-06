@@ -7,7 +7,7 @@ import type { IDKitResult, RpContext } from "@worldcoin/idkit";
 import { stringToHex } from "viem";
 import { Marketplace } from "../marketplace";
 
-type Challenge = { app_id: `app_${string}`; action: string; signal: string; rp_context: RpContext };
+type Challenge = { app_id: `app_${string}`; action: string; signal: string; environment: "production" | "staging"; rp_context: RpContext };
 
 export default function PublishAgent() {
   const [formData, setFormData] = useState({
@@ -102,7 +102,7 @@ export default function PublishAgent() {
   return (
     <Marketplace>
       {challenge && <IDKitRequestWidget open={widgetOpen} onOpenChange={setWidgetOpen}
-        app_id={challenge.app_id} action={challenge.action} rp_context={challenge.rp_context}
+        app_id={challenge.app_id} action={challenge.action} environment={challenge.environment} rp_context={challenge.rp_context}
         allow_legacy_proofs={false} preset={proofOfHuman({ signal: challenge.signal })}
         onSuccess={proof => {
           setWorldIdProof(proof);
@@ -139,7 +139,7 @@ export default function PublishAgent() {
             </div>
             <h2 className="text-xl font-bold text-white">Agent Registered Successfully!</h2>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/20 text-xs font-mono">
-              <span>🛡️ World ID Verified Creator</span>
+              <span>{challenge?.environment === "staging" ? "World ID staging proof verified" : "🛡️ World ID Verified Creator"}</span>
             </div>
             <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
               Your agent <strong className="text-white font-mono">{formData.name}</strong> was added to the directory after World ID and ENS verification.

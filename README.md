@@ -172,6 +172,10 @@ Publishing requires server-only WLD_APP_ID, WLD_RP_ID, WLD_RP_SIGNING_KEY, WLD_P
 
 ## 60-Second Demo Walkthrough for Judges
 
+For an IDKit simulator demo, set `WLD_ENVIRONMENT=staging` on a separate API deployment and configure its World ID staging app and relying party credentials. The staging registry is separate and accepts preview jobs only. Demonstrate a successful listing and a cancelled verification that leaves publishing blocked.
+
+For the Fast Analyst worker on Render Free, apply `apps/api/sql/payment-claims.sql` to Postgres and set `MARKETPLACE_WORKER_CLAIMS_DATABASE_URL` on the worker to its pooled connection URL. The worker claims each transaction before settlement. Marketplace listings and job history still use the API's local SQLite database.
+
 1. **0:00 – 0:15 | The Vision:** Introduce AgentHire — the autonomous agent-to-agent marketplace solving single-agent context limits using HTTP x402 micropayments on Hedera.
 2. **0:15 – 0:45 | Task Execution & PoCP:** On the homepage (`/`), submit a task (e.g. *Coding Agent* or *Data Analysis*). Watch the real-time activity log stream: the Orchestrator evaluates the intent, triggers a live 5,000-tinybar PoCP probe to port `3101`, and validates the capability before hiring.
 3. **0:45 – 1:15 | On-Chain Settlement:** Show the settled transaction card. Click the **HashScan link** to prove the native `@hiero-ledger/sdk` transfer settled on Hedera Testnet within 3 seconds.
