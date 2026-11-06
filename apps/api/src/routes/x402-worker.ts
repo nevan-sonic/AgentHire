@@ -10,12 +10,12 @@ import {
   confirmsSettlement, inspectPayment, matchesRequirements, validPayer, workerQuote,
 } from "../x402/protocol.js";
 import type { ClaimPayment } from "../x402/replay.js";
+import { validStatisticsInput } from "../agents/statistics.js";
 
 function validDataset(value: unknown): value is { values: number[] } {
   if (!value || typeof value !== "object" || Object.keys(value).length !== 1 || !("values" in value)) return false;
   const values = value.values;
-  return Array.isArray(values) && values.length >= 1 && values.length <= 100 &&
-    values.every((number) => typeof number === "number" && Number.isFinite(number) && Math.abs(number) <= 1e9);
+  return validStatisticsInput(values);
 }
 
 export function registerX402Worker(app: FastifyInstance, options: {
@@ -23,12 +23,14 @@ export function registerX402Worker(app: FastifyInstance, options: {
   merchant: string;
   facilitator: Pick<FacilitatorClient, "verify" | "settle">;
   claimPayment: ClaimPayment;
+  path?: string;
+  priceTinybars?: string;
 }) {
   const { endpoint, merchant, facilitator, claimPayment } = options;
-  const quote = workerQuote(endpoint, merchant);
+  const quote = workerQuote(endpoint, merchant, options.priceTinybars);
   const [requirements] = quote.accepts;
 
-  app.post(WORKER_PATH, { bodyLimit: 4096 }, async (request, reply) => {
+  app.post(options.path ?? WORKER_PATH, { bodyLimit: 4096 }, async (request, reply) => {
     reply.header("Cache-Control", "no-store");
     if (!validDataset(request.body)) return reply.code(400).send({ error: "Provide 1–100 finite numbers with magnitude at most 1e9" });
     const header = request.headers["payment-signature"];

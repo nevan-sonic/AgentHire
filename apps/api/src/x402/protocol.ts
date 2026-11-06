@@ -8,13 +8,13 @@ import {
 const numericAccount = /^\d{1,19}\.\d{1,19}\.\d{1,19}$/;
 const transactionIdPattern = /^(\d+\.\d+\.\d+)[@-](\d+)[.-](\d{9})$/;
 
-export function workerQuote(endpoint: string, merchant: string): PaymentRequired {
+export function workerQuote(endpoint: string, merchant: string, price = X402_PRICE): PaymentRequired {
   return {
     x402Version: 2,
     resource: { url: endpoint, description: "Deterministic numeric dataset summary", mimeType: "application/json" },
     accepts: [{
       scheme: "exact", network: X402_NETWORK, asset: X402_ASSET,
-      amount: X402_PRICE, payTo: merchant, maxTimeoutSeconds: QUOTE_TIMEOUT_SECONDS,
+      amount: price, payTo: merchant, maxTimeoutSeconds: QUOTE_TIMEOUT_SECONDS,
       extra: { feePayer: X402_FEE_PAYER },
     }],
   };

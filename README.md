@@ -142,7 +142,7 @@ The [official Hedera prize page](https://ethglobal.com/events/mumbai/prizes/hede
 - [x] Native HCS integration
 - [x] First x402-protected worker endpoint (local HTTP challenge verified)
 - [x] First autonomous x402 payment
-- [ ] Agent discovery
+- [x] Local worker discovery, structured bidding, and automatic selection
 - [ ] A2A negotiation
 - [ ] Adaptive PoCP engine
 - [ ] Spending controls
@@ -298,6 +298,59 @@ The official facilitator verified and settled one live testnet payment. The Mirr
 | Consensus timestamp | `1793922746.955672525` |
 | Transaction ID | [`0.0.9185802@1793922740.663974206`](https://hashscan.io/testnet/transaction/0.0.9185802-1793922740-663974206) |
 
+### Worker discovery and autonomous bidding
+
+The manager discovers available workers in a local registry, asks each matching adapter for a bid concurrently, and ranks the valid offers. Each bid identifies the task, worker, capability, price in tinybars, estimated latency, assumed reliability, expiration, and payment destination. The manager rejects timeouts, stale or mismatched bids, untrusted payment destinations, unsupported assets or networks, and offers outside the task's budget, deadline, or reliability threshold.
+
+These are three demo adapters in the same API process. They have separate IDs, pricing, and service routes and share deterministic statistics computation. The reliability estimates are assumptions for the demo.
+
+| Worker ID | Capability | Price (tinybars) | Latency (ms) | Assumed reliability |
+| --- | --- | ---: | ---: | ---: |
+| `economy` | `statistics.summary` | 600,000 | 300 | 60% |
+| `balanced` | `statistics.summary` | 750,000 | 200 | 95% |
+| `premium` | `statistics.summary` | 950,000 | 100 | 99% |
+
+- `GET /api/agents/workers?capability=statistics.summary` lists available workers in worker ID order. Omit the filter to list all available workers. Unsupported filters return HTTP 400.
+- `POST /api/agents/procure` accepts the task below. It returns the discovered workers, bids and rejection reasons, ranked eligible offers, winning bid, projected budget remaining, rationale, payment readiness, and pending audit records. A valid task with no eligible offer returns `no_eligible_bids`.
+
+```json
+{
+  "taskId": "demo-job",
+  "taskType": "statistics.summary",
+  "capability": "statistics.summary",
+  "input": [2, 4, 6, 8],
+  "maxBudgetTinybars": "1000000",
+  "deadlineMs": 1000,
+  "minimumReliabilityBps": 6000,
+  "selectionStrategy": "expected_cost"
+}
+```
+
+Selected fields from the response:
+
+```json
+{
+  "status": "selected",
+  "taskId": "demo-job",
+  "selectedWorker": { "workerId": "balanced" },
+  "winningBid": { "priceTinybars": "750000", "reliabilityBps": 9500 },
+  "budgetRemainingTinybars": "250000",
+  "paymentHandoff": { "paymentAuthorized": false }
+}
+```
+
+The budget remaining is the projected remainder after the bid. Procurement reserves no funds. The same input produces `{"count":4,"min":2,"max":8,"mean":5}` if later executed by the worker.
+
+`cheapest_eligible` ranks by nominal price, then expected cost. `expected_cost` ranks by price divided by reliability, then nominal price. Both finish ties by lower latency and worker ID. Reliability uses integer basis points, and scores are returned as exact fractions in tinybars. The manager compares these fractions with integer cross-products. Economy wins on price, while Balanced wins on expected cost.
+
+```bash
+pnpm --filter @agenthire/api agents:demo
+```
+
+The demo runs both strategies offline without credentials. The x402 handoff includes the selected worker ID, trusted endpoint, merchant, network, asset, bid ceiling, expiration, task ID, and dataset. It explicitly carries `paymentAuthorized: false`. A future executor must check that the bid is current, validate the live HTTP 402 quote against the handoff, and apply the payer's spending policy and authorization. The worker-specific payment routes are enabled only with the existing `X402_ENABLED` setting.
+
+The manager returns schema-validated `JOB_CREATED`, `BID_SUBMITTED`, and `WORKER_SELECTED` events as pending HCS records. They contain public references and amounts. Procurement neither submits the records nor invokes the payer.
+
 ## References
 
 - [x402 protocol specification and reference implementations](https://github.com/x402-foundation/x402)
@@ -309,4 +362,4 @@ The official facilitator verified and settled one live testnet payment. The Mirr
 
 **Early Development — ETHGlobal Mumbai 2026**
 
-The scaffold includes a landing page, testnet balance diagnostics, verified native HTS token creation, a verified HCS audit event, and a verified autonomous x402 payment. Live HTS association and transfer verification remain pending.
+The scaffold includes a landing page, testnet balance diagnostics, verified native HTS token creation, a verified HCS audit event, a verified autonomous x402 payment, and local worker discovery and selection. Live HTS association and transfer verification remain pending.
