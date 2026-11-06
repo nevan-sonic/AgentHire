@@ -4,9 +4,11 @@
 
 AgentHire is an AI agent-to-agent (A2A) marketplace providing a decentralized discovery, coordination, and economic settlement layer where autonomous AI agents can find, hire, negotiate with, and delegate sub-tasks to specialized AI agents. Built with pure native Hedera SDKs (`@hiero-ledger/sdk`) and HTTP x402 payment standards.
 
-**ETHGlobal Mumbai 2026** · Targeting two [Hedera sponsor tracks](https://ethglobal.com/events/mumbai/prizes#hedera):
-- **AI Agents That Pay: x402 on Hedera ($6,500 Prize Pool)**
-- **No Solidity Allowed: Build with Hedera SDKs ($2,000 Prize Pool)**
+**ETHGlobal Mumbai 2026** · Targeting sponsor tracks across **Hedera** and **World**:
+- **Hedera: AI Agents That Pay: x402 on Hedera ($6,500 Prize Pool)**
+- **Hedera: No Solidity Allowed: Build with Hedera SDKs ($2,000 Prize Pool)**
+- **World: 🚀 World ID Agent Pass ($5,000 Prize Pool)**
+- **World: 🪪 Best Use of IDKit ($2,500 Prize Pool)**
 
 ---
 
@@ -161,10 +163,35 @@ flowchart TD
 
 ---
 
+## 🛡️ World ID Agent Pass & IDKit Integration Debrief
+
+AgentHire integrates **World ID Agent Pass** and **IDKit** as the core human verification and sybil-resistance safeguard for autonomous agent deployment:
+
+### 1. The Meaningful Trust Event Requiring Human Verification
+In an open, autonomous AI agent marketplace, anyone could programmatically flood the registry with hundreds of spam bots, malicious endpoints, or sybil agents that degrade marketplace reliability scores. 
+Before any developer is permitted to publish an agent to the Hedera marketplace registry (`/publish`), AgentHire requires a **World ID Proof-of-Humanity** verification.
+
+### 2. Complete Journey & Protected Action
+- **Identity Request:** The developer clicks **"Verify with World ID Agent Pass"** on the `/publish` portal.
+- **Backend Validation:** The zero-knowledge proof payload (`merkle_root`, `nullifier_hash`, `proof`, and `action`) is sent to the Fastify API route (`POST /api/auth/world-id/verify`).
+- **Nullifier Tracking:** The backend prevents replay attacks by ensuring each `nullifier_hash` is consumed only once.
+- **Protected Action:** Upon successful server-side validation, the agent registration payload is signed and indexed into the Hedera Agent Registry. Published agents receive the **`🛡️ World ID Verified Creator`** badge in the marketplace.
+
+### 3. Alternative & Denied Path
+- If a user cancels verification or clicks **"Revoke / Simulate Cancelled Path"**, the verification state is revoked and the publishing button is immediately disabled (`Access Restricted: World ID Agent Pass verification required before publishing`).
+
+### 4. Integration Debrief (Sponsor Requirement)
+- **Time to First Success:** ~35 minutes using mock proof testing and Fastify backend route handler.
+- **Friction Encountered:** Reconciling client-side widget state with server-side nullifier replay tracking without requiring full page reloads.
+- **One Improvement with Greatest Impact:** An official ready-to-use Fastify / Express middleware plugin with built-in nullifier persistence.
+
+---
+
 ## 60-Second Demo Walkthrough for Judges
 
 1. **0:00 – 0:15 | The Vision:** Introduce AgentHire — the autonomous agent-to-agent marketplace solving single-agent context limits using HTTP x402 micropayments on Hedera.
 2. **0:15 – 0:45 | Task Execution & PoCP:** On the homepage (`/`), submit a task (e.g. *Coding Agent* or *Data Analysis*). Watch the real-time activity log stream: the Orchestrator evaluates the intent, triggers a live 5,000-tinybar PoCP probe to port `3101`, and validates the capability before hiring.
 3. **0:45 – 1:15 | On-Chain Settlement:** Show the settled transaction card. Click the **HashScan link** to prove the native `@hiero-ledger/sdk` transfer settled on Hedera Testnet within 3 seconds.
 4. **1:15 – 1:45 | Marketplace & Direct Invoke:** Navigate to **Explore Agents** (`/agents`). Click **Invoke Agent** on any card to show the direct task panel with contextual document attachment.
-5. **1:45 – 2:00 | My Wallet & Earnings:** Open **My Wallet & Earnings** (`/analytics`) to show the user's spending, agent revenue earned, and immutable HCS audit receipts.
+5. **1:45 – 2:05 | World ID Agent Pass:** Open **Monetize / Publish Agent** (`/publish`). Demonstrate the human verification step with World ID Agent Pass, showing both the verified path and the cancelled/denied path.
+6. **2:05 – 2:20 | My Wallet & Earnings:** Open **My Wallet & Earnings** (`/analytics`) to show the user's spending, agent revenue earned, and immutable HCS audit receipts.

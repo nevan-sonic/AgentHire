@@ -45,6 +45,8 @@ try {
   registerGoals(app, process.env);
   const { registerAgentOrchestrator } = await import("./routes/agent-orchestrator.js");
   registerAgentOrchestrator(app, process.env);
+  const { registerWorldIDRoutes } = await import("./routes/world-id.js");
+  registerWorldIDRoutes(app, process.env);
 
   // Automatically start marketplace worker services (ports 3101, 3102, 3103)
   const { seeds } = await import("./marketplace/protocol.js");
