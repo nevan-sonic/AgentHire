@@ -2,8 +2,8 @@
   "name": "@agenthire/web",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
-    "start": "next start --port 3000",
+    "dev": "next dev --hostname localhost --port 3000",
+    "start": "next start --hostname localhost --port 3000",
     "build": "next build",
     "lint": "eslint .",
     "test": "tsx --test test/*.test.ts",

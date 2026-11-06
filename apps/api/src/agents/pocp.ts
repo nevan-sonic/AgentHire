@@ -24,6 +24,7 @@ export type PaidTestResult = {
 
 export type PaidTestExecutor = {
   overheadMs: number;
+  planningOnly?: boolean;
   run(test: CapabilityTest, bid: ProcurementBid, finalHireReserve: bigint): Promise<PaidTestResult>;
 };
 
@@ -112,13 +113,14 @@ export async function adaptiveProcurement(
       compareWorkerIds(a.trace.workerId, b.trace.workerId))[0];
   const chosenTest = chosen?.offer
     ? statisticsMicroTest(task.taskId, chosen.trace.workerId, chosen.offer.priceTinybars, chosen.offer.timeoutMs) : null;
-  const payment = chosenTest && chosen && executor ? await executor.run(chosenTest, chosen.bid, chosen.reserve) : null;
+  const payment = chosenTest && chosen && executor && !executor.planningOnly ? await executor.run(chosenTest, chosen.bid, chosen.reserve) : null;
   const result = payment ? payment.result
     : chosenTest && chosen && !executor ? await runCapabilityTest(chosenTest, chosen.offer.run) : null;
   const simulatedCost = chosenTest && !executor ? BigInt(chosenTest.priceTinybars) : 0n;
+  const plannedCost = chosenTest && executor?.planningOnly ? BigInt(chosenTest.priceTinybars) : 0n;
   const spent = BigInt(payment?.spentTinybars ?? "0");
   const reserved = BigInt(payment?.reservedTinybars ?? "0");
-  const remaining = budget - simulatedCost - spent - reserved;
+  const remaining = budget - simulatedCost - plannedCost - spent - reserved;
   const posteriors = chosenTest && result ? candidatesAfter(chosenTest.workerId, result.passed) : candidates;
   const finalHires = payment?.state === "uncertain" ? [] : hires(posteriors, remaining, now());
   const winningBid = finalHires[0]?.bid ?? null;
@@ -132,7 +134,7 @@ export async function adaptiveProcurement(
       failurePenaltyTinybars: penalty.toString(), noHireLossTinybars: exact(noHireLoss),
       valuations: valuations.map(({ trace }) => trace),
       action: chosenTest ? "TEST" as const : "SKIP" as const,
-      executionMode: executor ? "live" as const : "simulation" as const,
+      executionMode: executor?.planningOnly ? "preview" as const : executor ? "live" as const : "simulation" as const,
       payment,
       reason: chosenTest ? "highest_positive_net_value" : "no_positive_feasible_test",
       chosenTest, result,
@@ -145,7 +147,8 @@ export async function adaptiveProcurement(
       budget: {
         totalTinybars: budget.toString(), committedTinybars: spent.toString(), simulatedTestTinybars: simulatedCost.toString(),
         remainingAfterTestTinybars: remaining.toString(), projectedHireTinybars: finalPrice.toString(),
-        projectedTotalTinybars: (simulatedCost + spent + reserved + finalPrice).toString(),
+        ...(executor?.planningOnly ? { plannedTestTinybars: plannedCost.toString() } : {}),
+        projectedTotalTinybars: (simulatedCost + plannedCost + spent + reserved + finalPrice).toString(),
         projectedRemainingTinybars: (remaining - finalPrice).toString(),
       },
       ...(executor ? { paymentBudget: {

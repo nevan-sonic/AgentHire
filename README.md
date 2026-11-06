@@ -488,7 +488,7 @@ The scaffold includes a landing page, testnet balance diagnostics, verified nati
 
 ## Judge dashboard
 
-Run `pnpm --filter @agenthire/web dev` from the repository root after running `pnpm install`, then open [the dashboard](http://localhost:3000/). The dashboard needs no wallet, account, environment secrets, or running API. To run the Fastify API separately, use `pnpm --filter @agenthire/api dev` in another terminal. Use the repository's Node 22 and pnpm versions.
+Run `pnpm --filter @agenthire/web dev` from the repository root after running `pnpm install`, then open [the historical dashboard](http://localhost:3000/proof). The dashboard needs no wallet, account, environment secrets, or running API. To run the Fastify API separately, use `pnpm --filter @agenthire/api dev` in another terminal. Use the repository's Node 22 and pnpm versions.
 
 The dashboard labels its public snapshot **Recorded verified testnet execution**. It works offline from the API and Mirror Node because it renders checked-in public evidence from the completed procurement. Set `NEXT_PUBLIC_API_URL=http://localhost:3001` in `apps/web/.env.local` before starting Next.js to enable an optional read-only check against `GET /api/demo/procurement/paid-pocp-live-001`. The route reconciles the local procurement and publication journals with the Mirror Node. If the check times out or evidence is unavailable, the recorded dashboard stays visible. The replay only advances a browser-local timeline with Play, Pause, Reset, and Step forward. It submits no payments or HCS messages. Economy, Balanced, and Premium are local demo adapters. Their reliability percentages are model estimates. Both x402 settlements used native HBAR.
 
@@ -502,3 +502,44 @@ The dashboard labels its public snapshot **Recorded verified testnet execution**
 2. **15–30 seconds.** Show Economy's incorrect mean of 7, the reference mean of 6, and the reliability update from 60% to 40%. The manager switched to Balanced.
 3. **30–45 seconds.** Open **View On-Chain Proof**. Show the two settled x402 transactions, Balanced's independently checked output, and the 245,000-tinybar balance.
 4. **45–60 seconds.** Expand an audit event to show its consensus sequence, event ID, hash, and transaction. Open the HCS topic in HashScan.
+
+## Local agent marketplace
+
+Use Node 22 and the pinned pnpm version. Run `pnpm install` and start these five processes in separate terminals:
+
+```sh
+pnpm --filter @agenthire/api worker fast
+pnpm --filter @agenthire/api worker reliable
+pnpm --filter @agenthire/api worker premium
+pnpm --filter @agenthire/api dev
+pnpm --filter @agenthire/web dev
+```
+
+Open [Marketplace](http://localhost:3000/), [My Jobs](http://localhost:3000/jobs), or [historical proof](http://localhost:3000/proof). The web app proxies its marketplace requests to the local API on port 3001. The workers are first-party processes bound to loopback ports 3101, 3102, and 3103. They share the configured testnet merchant. No wallet is required.
+
+| Worker | Starting bid (tinybars) | Input limit | Execution |
+| --- | ---: | ---: | --- |
+| Fast Analyst | 600,000 | 20 | Single-pass summary |
+| Reliable Analyst | 750,000 | 60 | Compensated sum and consistency checks |
+| Premium Analyst | 950,000 | 100 | Sorted distribution and median calculation |
+
+Workers expose `GET /agent`, `GET /health`, `POST /bid`, and x402-protected `POST /capability-test` and `POST /execute`. The quote is bound to the task, worker, endpoint, amount, and input digest. Bids expire after ten minutes and are validated against trusted loopback registrations. Price increases by 200 tinybars per input above five. Reliability estimates are Bayesian priors. The detail view separately counts observed independently evaluated tests.
+
+Jobs, registry snapshots, bids, plans, authorizations, and execution evidence are persisted in the local SQLite database at `.agenthire-marketplace/jobs.sqlite`. SSE resumes from a persisted cursor and refresh restores the saved job. The historical x402 and HCS journals remain separate.
+
+**Preview** performs actual discovery and bidding, calculates PoCP, and stops at the plan. It does not run a protected task or publish anything. **Live testnet** creates a plan and waits for a separate authenticated authorization. An operator should first run `pnpm --filter @agenthire/api marketplace:operator preflight JOB_ID` to review the job, payer, facilitator, and audit scope. It only reads local records and public network data.
+
+Live execution is disabled by default. After explicit authorization, enable `MARKETPLACE_LIVE_ENABLED=true` and set a high-entropy `MARKETPLACE_OPERATOR_TOKEN` (32 characters minimum) in the ignored root `.env`, then start the API with the existing payer, merchant, and Hedera operator configuration. The browser has no signing keys or operator token. Submit the approved policy with `pnpm --filter @agenthire/api marketplace:operator authorize path/to/policy.json`. The policy contains these fields:
+
+- `jobId`, `payer`, `merchant`, `network` (`hedera:testnet`), `asset` (`0.0.0`), and `endpoints` (the exact approved worker URLs).
+- `maxTotal`, `maxTest`, `maxHire`, and `maxSponsoredFee` as tinybar strings. The sponsored fee cap supported by this integration is `100000000` per payment.
+- `maxPayments` (1 or 2), `expiresAt` (UTC ISO timestamp within ten minutes), `topic` (`0.0.11331471`), `maxAuditMessages`, and `maxAuditFee` as a tinybar string. The HCS cap is 10,000,000 tinybars per message and the aggregate must cover the planned submissions.
+
+The manager refreshes and matches the approved plan, uses the official x402 facilitator, independently reconciles each settlement, then evaluates the returned output. It uses the existing Hedera SDK and canonical audit schema to publish and verify job-specific HCS events. An interrupted live job requires reconciliation. The authenticated `POST /api/marketplace/jobs/:jobId/reconcile` reads existing settlement and HCS evidence and leaves the job stopped for operator review. It does not resubmit. The API and database are intended for one local operator process. Public or multi-tenant deployment would need user authentication, job isolation, distributed execution coordination, and a more scalable audit-history index. Do not submit sensitive datasets to the local shared job workspace.
+
+### 60-second marketplace walkthrough
+
+1. Open the marketplace and confirm the worker health indicators.
+2. Create a preview job with `[10,20,30,40,50]`. Open the returned bids and PoCP valuation.
+3. For a separately authorized live job, show the approved scope, then follow the settlement and evaluation events.
+4. Open the verified settlement and HCS links. For an offline demonstration, use the previously verified `/proof` dashboard.

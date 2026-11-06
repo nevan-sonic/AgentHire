@@ -34,8 +34,8 @@ export type WorkerProfile = {
   available: boolean;
   capabilityEvidenceRef?: string;
   reliabilityBps: number;
-  reliabilitySource: "demo-assumption";
-  kind: "demo-adapter";
+  reliabilitySource: "demo-assumption" | "bayesian-prior";
+  kind: "demo-adapter" | "first-party-service";
 };
 
 export type ProcurementBid = {
@@ -77,4 +77,32 @@ export type PocpPaymentPlan = {
   totalBudgetTinybars: string;
   remainingAfterTestTinybars: string;
   paymentAuthorized: false;
+};
+
+export type MarketplaceOffer = {
+  bid: ProcurementBid;
+  inputDigest: string;
+  testPrice: string;
+  testEndpoint: string;
+  maxInput: number;
+};
+
+export type MarketplaceAgent = {
+  id: string;
+  name: string;
+  description: string;
+  maxInput: number;
+  basePrice: number;
+  reliabilityBps: number;
+  health: "online" | "unavailable";
+  merchant: string;
+  endpoint: string;
+  network: "hedera:testnet";
+  asset: "0.0.0";
+  capability: "statistics.summary";
+  designation: "first-party";
+  checkedAt: string;
+  registration: "registered";
+  verification: string;
+  observations: { passed: number; failed: number };
 };

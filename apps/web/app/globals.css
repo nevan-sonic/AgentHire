@@ -95,3 +95,32 @@ footer { border-top:1px solid var(--line); margin-top:32px; padding-top:14px; fo
   .audit-detail { padding-left:25px; }
 }
 .replay-note { display:block; margin-top:3px; font-weight:400; }
+
+.market-hero { padding-block:24px 12px; }
+.market-hero .lede { max-width:690px; margin-bottom:20px; }
+.primary-link { background:var(--accent); color:#071d18; border-color:var(--accent); font-weight:750; }
+.marketplace .workers { margin-top:16px; }
+.marketplace .worker h3 { font-size:1.3rem; margin-top:4px; }
+.marketplace .worker dl { margin-top:10px; font-size:.8rem; }
+.marketplace dd { text-align:right; overflow-wrap:anywhere; }
+.agent-detail { max-width:640px; }
+.process { display:flex; flex-wrap:wrap; gap:10px 28px; list-style:decimal inside; padding:18px; }
+.job-form { display:grid; gap:16px; padding:22px; max-width:740px; }
+.job-form label { display:grid; gap:6px; min-width:0; }
+.job-form input,.job-form select,.job-form textarea { border:1px solid var(--line); border-radius:7px; background:var(--bg); padding:9px 10px; min-width:0; }
+.job-form button { justify-self:start; }
+.workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.55fr) minmax(0,1fr); gap:14px; margin-top:20px; align-items:start; }
+.work-column { padding:16px; overflow-wrap:anywhere; }
+.work-column h2 { font-size:1.25rem; margin-block:4px 10px; }
+.work-column h3 { margin-top:12px; }
+.work-column p { margin-block:5px; }
+.work-column > a { display:inline-block; margin-top:10px; font-size:.85rem; }
+.decision-box { background:var(--bg); border:1px solid var(--line); border-radius:7px; padding:12px; margin-block:8px; }
+.activity { margin-top:12px; }
+.activity li { border-top:1px solid var(--line); padding-bottom:6px; }
+.activity summary { text-transform:capitalize; }
+.activity time { color:var(--muted); font-size:.72rem; }
+.job-list { padding:8px 16px; }
+.job-list li { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-block:10px; }
+.job-list li + li { border-top:1px solid var(--line); }
+@media (max-width: 850px) { .workspace { grid-template-columns:1fr; } }

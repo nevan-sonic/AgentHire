@@ -20,7 +20,11 @@
         "HEDERA_DIAGNOSTICS_ENABLED",
         "X402_ENABLED",
         "X402_MERCHANT_ID",
-        "POCP_TEST_PRICE_TINYBARS"
+        "POCP_TEST_PRICE_TINYBARS",
+        "MARKETPLACE_LIVE_ENABLED",
+        "MARKETPLACE_OPERATOR_TOKEN",
+        "X402_PAYER_ID",
+        "X402_PAYER_KEY"
       ]
     },
     "build": {
