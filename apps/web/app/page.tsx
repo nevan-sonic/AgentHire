@@ -13,17 +13,24 @@ type AgentLogEntry = {
 
 type FinalResult = {
   prompt: string;
+  taskType?: "numerical" | "research";
   status: string;
   completedAt: string;
   primaryAgent: string;
   subcontractedAgent: string;
-  computation: {
+  computation?: {
     count: number;
     min: number;
     max: number;
     mean: number;
     median?: number;
   };
+  sources?: Array<{
+    id: string;
+    url: string;
+    title: string;
+    excerpt: string;
+  }>;
   payment?: {
     payer: string;
     recipient: string;
@@ -55,9 +62,9 @@ export default function Home() {
   const logContainerRef = useRef<HTMLDivElement>(null);
 
   const presets = [
-    "Analyze server traffic latency spikes [24, 56, 120, 310, 45, 29, 680, 52] ms and provide recommendations",
-    "Evaluate quarterly revenue data [14000, 22000, 18500, 31000, 42000, 68000] USD for volatility and trend",
-    "Process IoT battery sensor metrics [3.2, 3.1, 2.9, 3.3, 2.7, 2.4, 3.0, 1.8] V to identify degradation risk",
+    { label: "Data Analysis", prompt: "Analyze server traffic latency spikes [24, 56, 120, 310, 45, 29, 680, 52] ms and provide recommendations" },
+    { label: "Quick Research", prompt: "Investigate Hedera x402 payment standard specifications and key facilitator features" },
+    { label: "Deep Research", prompt: "Perform deep research and comparative analysis of Hedera Agent Kit versus traditional web3 agent frameworks" },
   ];
 
   // Auto-scroll logs as new entries stream in
@@ -159,10 +166,10 @@ export default function Home() {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => setPrompt(preset)}
+                  onClick={() => setPrompt(preset.prompt)}
                   className="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/50 transition cursor-pointer"
                 >
-                  Example {idx + 1}
+                  {preset.label}
                 </button>
               ))}
             </div>
@@ -306,6 +313,25 @@ export default function Home() {
               <div className="prose prose-invert max-w-none text-slate-200 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-sans">
                 {result.finalOutput}
               </div>
+
+              {result.sources && result.sources.length > 0 && (
+                <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                  <div className="text-xs font-semibold text-slate-300 font-mono">
+                    Retrieved & Verified Multi-Source Evidence ({result.sources.length} sources):
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                    {result.sources.map((s, idx) => (
+                      <div key={idx} className="p-2.5 rounded bg-slate-950/80 border border-slate-800 space-y-1">
+                        <div className="font-semibold text-emerald-400 truncate">{s.title}</div>
+                        <p className="text-slate-400 text-[11px] line-clamp-2">{s.excerpt}</p>
+                        <a href={s.url} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline text-[10px] truncate block">
+                          {s.url} ↗
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {result.computation && (
                 <div className="pt-3 border-t border-slate-800/80 flex flex-wrap gap-4 text-xs font-mono text-slate-400">
