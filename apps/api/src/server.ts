@@ -43,6 +43,33 @@ try {
   registerDemoEvidence(app, process.env);
   registerMarketplace(app, process.env);
   registerGoals(app, process.env);
+  const { registerAgentOrchestrator } = await import("./routes/agent-orchestrator.js");
+  registerAgentOrchestrator(app, process.env);
+
+  // Automatically start marketplace worker services (ports 3101, 3102, 3103)
+  const { seeds } = await import("./marketplace/protocol.js");
+  const { createWorker } = await import("./marketplace/worker.js");
+  const workerApps = seeds.map(seed => createWorker(seed, process.env));
+  await Promise.all(workerApps.map((workerApp, index) =>
+    workerApp.listen({ host: "127.0.0.1", port: seeds[index].port }).catch(err => {
+      app.log.warn({ err }, `Worker ${seeds[index].name} startup note`);
+    })
+  ));
+
+  // Automatically start research worker services (ports 3111, 3112)
+  const { configuredResearchWorkers } = await import("./goals/research-protocol.js");
+  const { createResearchWorker } = await import("./goals/research-worker.js");
+  const researchWorkerList = configuredResearchWorkers(process.env);
+  const researchApps = researchWorkerList.map(worker => createResearchWorker(worker, process.env));
+  await Promise.all(researchApps.map((rApp, index) =>
+    rApp.listen({ host: "127.0.0.1", port: researchWorkerList[index].port }).catch(err => {
+      app.log.warn({ err }, `Research worker ${researchWorkerList[index].label} startup note`);
+    })
+  ));
+
+  app.addHook("onClose", async () => {
+    await Promise.allSettled([...workerApps, ...researchApps].map(w => w.close()));
+  });
   const x402 = process.env.X402_ENABLED === "true" ? loadX402Config(process.env, port) : undefined;
   const registry = createDemoRegistry(port, x402?.merchant, Date.now, {}, capabilityTestPrice(process.env));
   registerProcurementRoutes(app, registry, Boolean(x402));
