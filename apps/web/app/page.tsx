@@ -44,14 +44,14 @@ type FinalResult = {
   finalOutput: string;
 };
 
-const stageColors: Record<AgentLogEntry["stage"], { bg: string; text: string; border: string }> = {
-  THINKING: { bg: "bg-purple-950/50", text: "text-purple-300", border: "border-purple-800/60" },
-  DECISION: { bg: "bg-blue-950/50", text: "text-blue-300", border: "border-blue-800/60" },
-  DISCOVERY: { bg: "bg-cyan-950/50", text: "text-cyan-300", border: "border-cyan-800/60" },
-  NEGOTIATION: { bg: "bg-amber-950/50", text: "text-amber-300", border: "border-amber-800/60" },
-  PAYMENT: { bg: "bg-emerald-950/60", text: "text-emerald-400", border: "border-emerald-700/80" },
-  VERIFICATION: { bg: "bg-teal-950/50", text: "text-teal-300", border: "border-teal-800/60" },
-  SYNTHESIS: { bg: "bg-indigo-950/50", text: "text-indigo-300", border: "border-indigo-800/60" },
+const stageTheme: Record<AgentLogEntry["stage"], { badge: string; border: string }> = {
+  THINKING: { badge: "bg-purple-500/10 text-purple-300 border-purple-500/20", border: "border-purple-500/20" },
+  DECISION: { badge: "bg-blue-500/10 text-blue-300 border-blue-500/20", border: "border-blue-500/20" },
+  DISCOVERY: { badge: "bg-cyan-500/10 text-cyan-300 border-cyan-500/20", border: "border-cyan-500/20" },
+  NEGOTIATION: { badge: "bg-amber-500/10 text-amber-300 border-amber-500/20", border: "border-amber-500/20" },
+  PAYMENT: { badge: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", border: "border-emerald-500/20" },
+  VERIFICATION: { badge: "bg-sky-500/10 text-sky-300 border-sky-500/20", border: "border-sky-500/20" },
+  SYNTHESIS: { badge: "bg-indigo-500/10 text-indigo-300 border-indigo-500/20", border: "border-indigo-500/20" },
 };
 
 export default function Home() {
@@ -66,19 +66,17 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const presets = [
-    { key: "RESEARCH" as const, label: "🔬 Research & Deep Thinking", prompt: "Investigate Hedera Consensus Service (HCS) and conduct deep thinking on how tamper-evident audit logs secure autonomous agent workflows" },
-    { key: "CODING" as const, label: "💻 Coding / API", prompt: "Create a TypeScript function to construct, sign, and execute a native TransferTransaction with error handling using @hiero-ledger/sdk" },
-    { key: "DATA_ANALYST" as const, label: "📊 Data Analysis", prompt: "Analyze server latency spikes [24, 56, 120, 310, 45, 29, 680, 52] ms, compute statistics, and identify anomalies" },
-    { key: "REPORT_WRITER" as const, label: "📑 Report Generation", prompt: "Generate a comprehensive executive report on the economic benefits of agent micropayments over HTTP 402" },
-    { key: "DOC_SUMMARIZER" as const, label: "📄 Document Summarization", prompt: "Summarize a research paper on decentralized AI agent governance and extract core takeaways and action items" },
+    { key: "RESEARCH" as const, label: "Research Agent", prompt: "Investigate Hedera Consensus Service (HCS) and conduct deep thinking on how tamper-evident audit logs secure autonomous agent workflows" },
+    { key: "CODING" as const, label: "Coding Agent", prompt: "Create a TypeScript function to construct, sign, and execute a native TransferTransaction with error handling using @hiero-ledger/sdk" },
+    { key: "DATA_ANALYST" as const, label: "Data Analyst", prompt: "Analyze server latency spikes [24, 56, 120, 310, 45, 29, 680, 52] ms, compute statistics, and identify anomalies" },
+    { key: "REPORT_WRITER" as const, label: "Report Agent", prompt: "Generate a comprehensive executive report on the economic benefits of agent micropayments over HTTP 402" },
+    { key: "DOC_SUMMARIZER" as const, label: "Summarizer Agent", prompt: "Summarize a research paper on decentralized AI agent governance and extract core takeaways and action items" },
   ];
 
-  // Whether file upload is relevant for current task
   const showFileUpload = selectedCategory === "DATA_ANALYST" ||
     selectedCategory === "DOC_SUMMARIZER" ||
     /excel|sheet|spreadsheet|csv|tabular|pdf|word|docx|document|summar/i.test(prompt);
 
-  // Auto-scroll logs as new entries stream in
   useEffect(() => {
     if (logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
@@ -96,7 +94,6 @@ export default function Home() {
         name: file.name,
         content: text || "",
       });
-      // Contextual prompt prefill if empty
       if (!prompt.trim()) {
         if (/\.(csv|tsv|xlsx|xls)$/i.test(file.name)) {
           setPrompt(`Analyze the attached spreadsheet ${file.name}, compute key metrics, and identify anomalies.`);
@@ -167,173 +164,275 @@ export default function Home() {
 
   return (
     <Marketplace>
-      <div className="max-w-5xl mx-auto space-y-6 py-4">
-        {/* Header */}
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/80 mb-3">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Autonomous Agent-to-Agent Marketplace · x402 Micropayments
+      <div className="space-y-6">
+        {/* Top Control Header with pill action */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-blue-400 font-semibold">Autonomous A2A Protocol</span>
+              <span className="text-white/20">/</span>
+              <span className="text-[11px] text-slate-400">Micro-Settlement Pipeline</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+              Agent Orchestration <span className="text-blue-400 font-medium">& Execution Mesh</span>
+            </h1>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-100">
-            Real-Time Agent <span className="text-emerald-400">Thinking & Hiring Pipeline</span>
-          </h1>
-          <p className="text-slate-400 text-sm md:text-base mt-2 max-w-2xl leading-relaxed">
-            Enter a prompt. Watch the Lead Agent reason, detect capability boundaries, discover worker agents, negotiate terms, pay over x402 on Hedera testnet, and verify the final outcome live.
-          </p>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-medium">Active Hierarchy:</span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/10 backdrop-blur-md">
+              1 Master + 5 Specialists
+            </span>
+          </div>
         </div>
 
-        {/* Input Form */}
-        <form onSubmit={startStreamingTask} className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-200">
-              Task Prompt
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="e.g. Analyze latency data [24, 56, 120, 310, 45, 29, 680, 52] ms and recommend infrastructure optimizations..."
-                rows={3}
-                className="w-full mt-2 px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-700/80 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 text-sm transition"
-                required
-              />
-            </label>
+        {/* Dynamic Canvas-Style Grid: Left Active Agent Card + Right Prompt/Workspace Input */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          {/* Left Column: Featured Glowing Active Specialist Card (Styled exactly like the highlighted blue glass card in reference image) */}
+          <div className="lg:col-span-4 flex flex-col justify-between p-6 glass-card-glow relative overflow-hidden">
+            {/* Subtle radial inner glow */}
+            <div className="absolute top-0 right-0 w-44 h-44 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
 
-            {/* File Attachment Section - only shown for Data Analysis and Document Summarization */}
-            {showFileUpload && (
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs animate-fade-in bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept=".csv,.xlsx,.xls,.tsv,.pdf,.docx,.doc,.txt,.json,.md"
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 font-medium transition cursor-pointer"
-                  >
-                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                    </svg>
-                    <span>Attach Spreadsheet / Document</span>
-                  </button>
-
-                  {attachedFile && (
-                    <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-950/70 border border-emerald-800 text-emerald-300 font-mono">
-                      <span className="truncate max-w-[200px]">{attachedFile.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => setAttachedFile(null)}
-                        className="text-slate-400 hover:text-slate-100 font-bold ml-1 cursor-pointer"
-                        title="Remove file"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
+            <div className="space-y-4 relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
                 </div>
-                <span className="text-slate-400 font-mono text-[11px]">Supported: .csv, .xlsx, .pdf, .docx, .txt</span>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-400/10 border border-blue-400/30 text-[11px] font-mono text-blue-200">
+                  <span className={`w-1.5 h-1.5 rounded-full ${loading ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`} />
+                  <span>{loading ? "Analyzing Task" : "Ready"}</span>
+                </div>
               </div>
-            )}
-          </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-500 font-mono">Quick test:</span>
-              {presets.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setSelectedCategory(preset.key);
-                    setPrompt(preset.prompt);
-                    if (preset.key !== "DATA_ANALYST" && preset.key !== "DOC_SUMMARIZER") {
-                      setAttachedFile(null);
-                    }
-                  }}
-                  className={`text-xs px-2.5 py-1 rounded-md border transition cursor-pointer ${
-                    selectedCategory === preset.key
-                      ? "bg-emerald-950 text-emerald-300 border-emerald-700"
-                      : "bg-slate-800/70 hover:bg-slate-800 text-slate-300 border-slate-700/50"
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
+              <div>
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  {result?.specialistAgent || (selectedCategory ? presets.find(p => p.key === selectedCategory)?.label : "Lead Orchestrator")}
+                </h3>
+                <p className="text-xs text-blue-200/70 mt-0.5">
+                  Autonomous Subcontracting & PoCP Procurement
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center gap-2 text-xs text-blue-100/90 bg-black/20 p-2 rounded-lg border border-white/5">
+                  <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Verifiable execution SLA guarantees</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-blue-100/90 bg-black/20 p-2 rounded-lg border border-white/5">
+                  <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>On-chain micro-settlement over HTTP 402</span>
+                </div>
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading || !prompt.trim()}
-              className="px-5 py-2 rounded-lg bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 text-slate-950 font-semibold text-sm transition shadow flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-slate-950" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                  </svg>
-                  <span>Agents Collaborating…</span>
-                </>
-              ) : (
-                "Run Agent Task →"
-              )}
-            </button>
+            <div className="pt-6 border-t border-white/10 space-y-3 relative z-10">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-200/70">Reliability Score</span>
+                <span className="font-mono font-semibold text-white">98.5% Bayesian</span>
+              </div>
+              <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-400 to-indigo-400 h-full rounded-full transition-all duration-500" style={{ width: "98%" }} />
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-blue-200/70">Protocol Layer</span>
+                <span className="font-mono text-white text-[11px] bg-white/10 px-2 py-0.5 rounded-full border border-white/10">Hedera + Groq Llama3</span>
+              </div>
+            </div>
           </div>
-        </form>
+
+          {/* Right Column: Clean Dark Glass Workspace Form (styled like central node card in reference) */}
+          <div className="lg:col-span-8 glass-panel p-6 flex flex-col justify-between space-y-5 border border-white/[0.08]">
+            <form onSubmit={startStreamingTask} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-300">Instruct Agent Pipeline</span>
+                  <span className="text-[10px] font-mono text-slate-500 px-2 py-0.5 rounded-full bg-white/[0.04]">Prompt Input</span>
+                </div>
+
+                {/* Quick Presets as clean dark pills */}
+                <div className="hidden sm:flex items-center gap-1.5">
+                  {presets.slice(0, 3).map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(preset.key);
+                        setPrompt(preset.prompt);
+                        if (preset.key !== "DATA_ANALYST" && preset.key !== "DOC_SUMMARIZER") {
+                          setAttachedFile(null);
+                        }
+                      }}
+                      className={`text-[11px] px-2.5 py-1 rounded-full border transition cursor-pointer ${
+                        selectedCategory === preset.key
+                          ? "bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/30"
+                          : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Textarea */}
+              <div className="relative">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Plan the successful deployment of our smart contract or analyze complex datasets across agents..."
+                  rows={4}
+                  className="w-full px-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/50 text-sm leading-relaxed transition resize-none"
+                  required
+                />
+              </div>
+
+              {/* Contextual File Upload Pill */}
+              {showFileUpload && (
+                <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-blue-950/20 border border-blue-500/20 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept=".csv,.xlsx,.xls,.tsv,.pdf,.docx,.doc,.txt,.json,.md"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="pill-secondary px-3 py-1.5 text-xs inline-flex items-center gap-1.5 cursor-pointer font-medium"
+                    >
+                      <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      <span>Attach Document / Spreadsheet</span>
+                    </button>
+
+                    {attachedFile && (
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 font-mono text-[11px]">
+                        <span className="truncate max-w-[200px]">{attachedFile.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setAttachedFile(null)}
+                          className="hover:text-white cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-mono">Supported: .csv, .xlsx, .pdf, .docx</span>
+                </div>
+              )}
+
+              {/* Bottom Form Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <div className="flex items-center gap-2">
+                  {presets.slice(3).map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(preset.key);
+                        setPrompt(preset.prompt);
+                        if (preset.key !== "DATA_ANALYST" && preset.key !== "DOC_SUMMARIZER") {
+                          setAttachedFile(null);
+                        }
+                      }}
+                      className={`text-[11px] px-2.5 py-1 rounded-full border transition cursor-pointer ${
+                        selectedCategory === preset.key
+                          ? "bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/30"
+                          : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !prompt.trim()}
+                  className="pill-primary px-6 py-2.5 text-xs tracking-wide uppercase font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-3.5 w-3.5 text-slate-950" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      <span>Agents Running...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Execute Task</span>
+                      <span className="text-slate-950">→</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
 
         {error && (
-          <div className="p-4 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-sm">
-            <strong>Execution Error:</strong> {error}
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+            <strong>Error:</strong> {error}
           </div>
         )}
 
-        {/* Live Activity & Reasoning Logs */}
+        {/* Live Reasoning Logs & Synthetic Capability Trace */}
         {(logs.length > 0 || loading) && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-            <div className="flex items-center justify-between px-5 py-3.5 bg-slate-950/90 border-b border-slate-800">
+          <div className="glass-panel overflow-hidden border border-white/[0.08]">
+            <div className="px-5 py-3.5 bg-black/30 border-b border-white/[0.06] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className={`w-2.5 h-2.5 rounded-full ${loading ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`} />
-                <h2 className="text-sm font-semibold text-slate-200">
-                  Live Agent Activity & Chain-of-Thought Stream
+                <span className={`w-2 h-2 rounded-full ${loading ? "bg-blue-400 animate-ping" : "bg-emerald-400"}`} />
+                <h2 className="text-xs font-semibold text-slate-200 uppercase tracking-wider font-mono">
+                  Autonomous Activity Stream & Negotiation Trace
                 </h2>
               </div>
-              <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+              <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
                 <span>{logs.length} events logged</span>
-                {loading && <span className="text-amber-400 font-semibold animate-pulse">· Processing</span>}
+                {loading && <span className="text-blue-400 font-semibold animate-pulse">· Delegating</span>}
               </div>
             </div>
 
             <div
               ref={logContainerRef}
-              className="p-5 max-h-[380px] overflow-y-auto space-y-3 font-mono text-xs scroll-smooth bg-slate-950/50"
+              className="p-5 max-h-[380px] overflow-y-auto space-y-3 font-mono text-xs scroll-smooth bg-black/20"
             >
               {logs.map((log, idx) => {
-                const style = stageColors[log.stage] || stageColors.THINKING;
+                const style = stageTheme[log.stage] || stageTheme.THINKING;
                 return (
                   <div
                     key={idx}
-                    className={`p-3 rounded-lg border ${style.bg} ${style.border} transition-all duration-300`}
+                    className={`p-3.5 rounded-xl bg-white/[0.02] border ${style.border} transition-all duration-300`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${style.text} border ${style.border}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${style.badge} border`}>
                           {log.stage}
                         </span>
-                        <span className="text-slate-300 font-semibold">{log.agent}</span>
+                        <span className="text-slate-200 font-semibold">{log.agent}</span>
                       </div>
                       <time className="text-slate-500 text-[10px]">
                         {new Date(log.timestamp).toLocaleTimeString()}
                       </time>
                     </div>
-                    <p className="text-slate-200 leading-relaxed text-xs font-sans whitespace-pre-wrap">
+                    <p className="text-slate-300 leading-relaxed text-xs font-sans whitespace-pre-wrap">
                       {log.thought}
                     </p>
 
-                    {/* Data payload if any */}
+                    {/* Data payload (includes synthetic test query [3, 6, 9] inspection) */}
                     {log.data && Object.keys(log.data).length > 0 && (
-                      <pre className="mt-2 p-2 rounded bg-black/40 border border-slate-800/80 text-[11px] text-slate-400 overflow-x-auto">
+                      <pre className="mt-2.5 p-3 rounded-lg bg-black/60 border border-white/[0.08] text-[11px] text-blue-200/90 overflow-x-auto">
                         {JSON.stringify(log.data, null, 2)}
                       </pre>
                     )}
@@ -342,34 +441,34 @@ export default function Home() {
               })}
 
               {loading && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 py-1 pl-1 font-sans">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:0.2s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:0.4s]" />
-                  <span className="italic ml-1">Autonomous agents communicating and settling transactions...</span>
+                <div className="flex items-center gap-2 text-xs text-slate-400 py-1 pl-1 font-sans">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.4s]" />
+                  <span className="italic ml-1">Agents negotiating terms and computing deliverables...</span>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Final Synthesized Output & Verified Proof */}
+        {/* Deliverable & Hedera Settlement */}
         {result && (
           <div className="space-y-4 animate-fade-in">
-            {/* Settlement Details */}
+            {/* Settlement Card */}
             {result.payment && (
-              <div className="p-4 rounded-xl bg-slate-900 border border-emerald-900/60 shadow flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
+              <div className="p-4 rounded-xl glass-panel border border-blue-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <strong className="text-emerald-400 text-sm">x402 Micropayment Settled</strong>
-                    <span className="text-slate-400">({Number(result.payment.amountTinybars).toLocaleString()} tinybars)</span>
+                    <strong className="text-white text-sm">x402 Micropayment Settled</strong>
+                    <span className="text-blue-300">({Number(result.payment.amountTinybars).toLocaleString()} tinybars)</span>
                   </div>
                   <div className="text-slate-400">
-                    Payer: <span className="text-slate-300">{result.payment.payer}</span> · Merchant: <span className="text-slate-300">{result.payment.recipient}</span>
+                    Payer: <span className="text-slate-200">{result.payment.payer}</span> · Merchant: <span className="text-slate-200">{result.payment.recipient}</span>
                   </div>
                   <div className="text-slate-400">
-                    Tx ID: <span className="text-slate-300">{result.payment.transactionId}</span>
+                    Tx ID: <span className="text-slate-200">{result.payment.transactionId}</span>
                   </div>
                 </div>
 
@@ -378,7 +477,7 @@ export default function Home() {
                     href={result.payment.explorerUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-700 hover:bg-emerald-900 transition text-xs font-semibold shrink-0"
+                    className="pill-secondary px-4 py-2 text-xs font-medium inline-flex items-center gap-1.5 hover:text-white"
                   >
                     <span>View on HashScan</span>
                     <span>↗</span>
@@ -387,18 +486,18 @@ export default function Home() {
               </div>
             )}
 
-            {/* Deliverable Box */}
-            <div className="bg-slate-900 border border-emerald-800/80 rounded-xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-base font-semibold text-emerald-400 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Deliverable Result */}
+            <div className="glass-panel p-6 border border-white/[0.08] space-y-4">
+              <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+                <h3 className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                  <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
                   Verified Final Task Deliverable
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 font-mono">Executed by:</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-semibold font-mono">
+                  <span className="text-xs text-slate-400 font-mono">Completed by:</span>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 font-semibold font-mono">
                     {result.specialistAgent || result.subcontractedAgent || "Specialist Agent"}
                   </span>
                 </div>
@@ -409,14 +508,14 @@ export default function Home() {
               </div>
 
               {result.sources && result.sources.length > 0 && (
-                <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                <div className="pt-4 border-t border-white/[0.08] space-y-2.5">
                   <div className="text-xs font-semibold text-slate-300 font-mono">
-                    Retrieved & Verified Multi-Source Evidence ({result.sources.length} sources):
+                    Retrieved Multi-Source Evidence ({result.sources.length} sources):
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
                     {result.sources.map((s, idx) => (
-                      <div key={idx} className="p-2.5 rounded bg-slate-950/80 border border-slate-800 space-y-1">
-                        <div className="font-semibold text-emerald-400 truncate">{s.title}</div>
+                      <div key={idx} className="p-3 rounded-xl bg-black/40 border border-white/[0.06] space-y-1">
+                        <div className="font-semibold text-blue-300 truncate">{s.title}</div>
                         <p className="text-slate-400 text-[11px] line-clamp-2">{s.excerpt}</p>
                         <a href={s.url} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline text-[10px] truncate block">
                           {s.url} ↗
@@ -428,15 +527,12 @@ export default function Home() {
               )}
 
               {result.computation && (
-                <div className="pt-3 border-t border-slate-800/80 flex flex-wrap gap-4 text-xs font-mono text-slate-400">
-                  <span className="text-slate-300 font-semibold">Subtask Mathematical Computation:</span>
-                  <span>Count: <strong className="text-emerald-400">{result.computation.count}</strong></span>
-                  <span>Min: <strong className="text-emerald-400">{result.computation.min}</strong></span>
-                  <span>Max: <strong className="text-emerald-400">{result.computation.max}</strong></span>
-                  <span>Mean: <strong className="text-emerald-400">{result.computation.mean.toFixed(2)}</strong></span>
-                  {result.computation.median !== undefined && (
-                    <span>Median: <strong className="text-emerald-400">{result.computation.median}</strong></span>
-                  )}
+                <div className="pt-3 border-t border-white/[0.08] flex flex-wrap gap-4 text-xs font-mono text-slate-400">
+                  <span className="text-slate-300 font-semibold">Mathematical Verification:</span>
+                  <span>Count: <strong className="text-blue-400">{result.computation.count}</strong></span>
+                  <span>Min: <strong className="text-blue-400">{result.computation.min}</strong></span>
+                  <span>Max: <strong className="text-blue-400">{result.computation.max}</strong></span>
+                  <span>Mean: <strong className="text-blue-400">{result.computation.mean.toFixed(2)}</strong></span>
                 </div>
               )}
             </div>
