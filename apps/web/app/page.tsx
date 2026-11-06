@@ -13,11 +13,12 @@ type AgentLogEntry = {
 
 type FinalResult = {
   prompt: string;
-  taskType?: "numerical" | "research";
+  specialistAgent?: string;
+  specialistRole?: string;
+  primaryAgent: string;
+  subcontractedAgent?: string;
   status: string;
   completedAt: string;
-  primaryAgent: string;
-  subcontractedAgent: string;
   computation?: {
     count: number;
     min: number;
@@ -62,9 +63,11 @@ export default function Home() {
   const logContainerRef = useRef<HTMLDivElement>(null);
 
   const presets = [
-    { label: "Data Analysis", prompt: "Analyze server traffic latency spikes [24, 56, 120, 310, 45, 29, 680, 52] ms and provide recommendations" },
-    { label: "Quick Research", prompt: "Investigate Hedera x402 payment standard specifications and key facilitator features" },
-    { label: "Deep Research", prompt: "Perform deep research and comparative analysis of Hedera Agent Kit versus traditional web3 agent frameworks" },
+    { label: "🔬 Research & Deep Thinking", prompt: "Investigate Hedera Consensus Service (HCS) and conduct deep thinking on how tamper-evident audit logs secure autonomous agent workflows" },
+    { label: "💻 Coding / API", prompt: "Create a TypeScript function to construct, sign, and execute a native TransferTransaction with error handling using @hiero-ledger/sdk" },
+    { label: "📊 Data Analysis", prompt: "Analyze server latency spikes [24, 56, 120, 310, 45, 29, 680, 52] ms, compute statistics, and identify anomalies" },
+    { label: "📑 Report Generation", prompt: "Generate a comprehensive executive report on the economic benefits of agent micropayments over HTTP 402" },
+    { label: "📄 Document Summarization", prompt: "Summarize a research paper on decentralized AI agent governance and extract core takeaways and action items" },
   ];
 
   // Auto-scroll logs as new entries stream in
@@ -307,7 +310,12 @@ export default function Home() {
                   </svg>
                   Verified Final Task Deliverable
                 </h3>
-                <span className="text-xs text-slate-400 font-mono">Synthesized by Lead Agent</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 font-mono">Executed by:</span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-semibold font-mono">
+                    {result.specialistAgent || result.subcontractedAgent || "Specialist Agent"}
+                  </span>
+                </div>
               </div>
 
               <div className="prose prose-invert max-w-none text-slate-200 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-sans">

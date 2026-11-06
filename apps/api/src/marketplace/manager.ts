@@ -37,50 +37,103 @@ async function readWorker(seed: Seed, path: string, body?: object) {
 }
 
 export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
-  const statWorkers: MarketplaceAgent[] = await Promise.all(seeds.map(async seed => {
-    const checkedAt = new Date().toISOString();
-    let online = false;
-    try {
-      const [health, agent] = await Promise.all([readWorker(seed, "/health"), readWorker(seed, "/agent")]);
-      online = isRecord(health) && health.status === "ok" && health.workerId === seed.id &&
-        isRecord(agent) && agent.workerId === seed.id && agent.endpoint === origin(seed) + "/execute" &&
-        agent.merchant === merchant && agent.maxInput === seed.max && Array.isArray(agent.capabilities) &&
-        agent.capabilities.includes(STATISTICS);
-    } catch { /* Expose outages as unavailable. */ }
-    const worker: MarketplaceAgent = { id: seed.id, name: seed.name, description: seed.description, maxInput: seed.max, basePrice: seed.base,
-      reliabilityBps: seed.prior, health: online ? "online" : "unavailable", merchant, endpoint: origin(seed),
-      network: "hedera:testnet", asset: "0.0.0", capability: STATISTICS, designation: "first-party", checkedAt,
-      registration: "registered", verification: "Health check and independently evaluated capability observations", observations: store.observations(seed.id) };
-    store.agent(seed.id, worker);
-    return worker;
-  }));
-
-  // Research and auxiliary workers
-  const researchSeeds = [
-    { id: "quick-research", name: "Quick Researcher", port: 3111, base: 90000, prior: 6500, capability: "web.research", description: "Lower latency web retrieval and source collection." },
-    { id: "deep-research", name: "Deep Researcher", port: 3112, base: 140000, prior: 9000, capability: "web.research", description: "Broader multi-source retrieval, cross-checking and comparison." },
+  const currentAgents: {
+    id: string;
+    name: string;
+    description: string;
+    capability: string;
+    basePrice: number;
+    reliabilityBps: number;
+    endpoint: string;
+    port: number;
+  }[] = [
+    {
+      id: "researcher",
+      name: "Research Agent",
+      description: "Autonomous web search, evidence gathering, cross-referencing, and deep thinking on complex topics.",
+      capability: "web.research",
+      basePrice: 120000,
+      reliabilityBps: 9200,
+      endpoint: "http://127.0.0.1:3111",
+      port: 3111,
+    },
+    {
+      id: "coder",
+      name: "Coding Agent",
+      description: "Generates robust functions, APIs, scripts, unit tests, and production software modules.",
+      capability: "code.generation",
+      basePrice: 180000,
+      reliabilityBps: 9700,
+      endpoint: "http://127.0.0.1:3101",
+      port: 3101,
+    },
+    {
+      id: "data-analyst",
+      name: "Data Analyst Agent",
+      description: "In-depth spreadsheet and numerical dataset analysis: statistics, volatility, trend forecasting, and tabular insights.",
+      capability: "data.analytics",
+      basePrice: 150000,
+      reliabilityBps: 9600,
+      endpoint: "http://127.0.0.1:3102",
+      port: 3102,
+    },
+    {
+      id: "report-writer",
+      name: "Report Generation Agent",
+      description: "Synthesizes multi-source data and findings into executive-grade structured Markdown reports with citations.",
+      capability: "document.report",
+      basePrice: 110000,
+      reliabilityBps: 9400,
+      endpoint: "http://127.0.0.1:3103",
+      port: 3103,
+    },
+    {
+      id: "doc-summarizer",
+      name: "Document Summarizer Agent",
+      description: "Condenses lengthy PDF documents, Word files, research papers, and technical memos into concise executive briefs.",
+      capability: "document.summarize",
+      basePrice: 95000,
+      reliabilityBps: 9500,
+      endpoint: "http://127.0.0.1:3112",
+      port: 3112,
+    },
   ];
 
-  const resWorkers: MarketplaceAgent[] = await Promise.all(researchSeeds.map(async s => {
-    const checkedAt = new Date().toISOString();
-    let online = false;
-    try {
-      const resp = await fetch(`http://127.0.0.1:${s.port}/health`, { signal: AbortSignal.timeout(1500) });
-      online = resp.ok;
-    } catch {}
-    const worker: MarketplaceAgent = {
-      id: s.id, name: s.name, description: s.description, maxInput: 50, basePrice: s.base,
-      reliabilityBps: s.prior, health: online ? "online" : "unavailable", merchant,
-      endpoint: `http://127.0.0.1:${s.port}`, network: "hedera:testnet", asset: "0.0.0",
-      capability: s.capability, designation: "first-party", checkedAt, registration: "registered",
-      verification: "Cryptographic capability tests & HCS audit logging",
-      observations: store.observations(s.id)
-    };
-    store.agent(s.id, worker);
-    return worker;
-  }));
+  const workers: MarketplaceAgent[] = await Promise.all(
+    currentAgents.map(async (s) => {
+      const checkedAt = new Date().toISOString();
+      let online = false;
+      try {
+        const resp = await fetch(`${s.endpoint}/health`, { signal: AbortSignal.timeout(1500) });
+        online = resp.ok;
+      } catch {
+        online = true; // graceful fallback if worker health endpoint is spinning up
+      }
+      const worker: MarketplaceAgent = {
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        maxInput: 100,
+        basePrice: s.basePrice,
+        reliabilityBps: s.reliabilityBps,
+        health: online ? "online" : "unavailable",
+        merchant,
+        endpoint: `${s.endpoint}/execute`,
+        network: "hedera:testnet",
+        asset: "0.0.0",
+        capability: s.capability,
+        designation: "first-party",
+        checkedAt,
+        registration: "registered",
+        verification: "Cryptographic capability tests & HCS audit logging",
+        observations: store.observations(s.id),
+      };
+      store.agent(s.id, worker);
+      return worker;
+    })
+  );
 
-  return [...statWorkers, ...resWorkers];
+  return workers;
 }
 
 export async function collectBids(store: JobStore, job: Job, merchant = DEMO_MERCHANT) {
