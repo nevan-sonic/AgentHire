@@ -128,12 +128,35 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
         verification: "Cryptographic capability tests & HCS audit logging",
         observations: store.observations(s.id),
       };
-      store.agent(s.id, worker);
       return worker;
     })
   );
 
-  return workers;
+  // Retrieve user-published custom agents from SQLite database
+  const customRows = store.listCustomAgents();
+  const customAgents: MarketplaceAgent[] = customRows
+    .filter(row => !currentAgents.some(base => base.id === row.id))
+    .map(row => ({
+      id: String(row.id),
+      name: String(row.name || "Custom Agent"),
+      description: String(row.description || ""),
+      maxInput: Number(row.maxInput) || 100,
+      basePrice: Number(row.basePrice) || 100000,
+      reliabilityBps: Number(row.reliabilityBps) || 9500,
+      health: "online" as const,
+      merchant: String(row.merchant || merchant),
+      endpoint: String(row.endpoint || "http://127.0.0.1:3101/execute"),
+      network: "hedera:testnet" as const,
+      asset: "0.0.0" as const,
+      capability: String(row.capability || "web.research"),
+      designation: "third-party" as const,
+      checkedAt: new Date().toISOString(),
+      registration: "registered" as const,
+      verification: "Community Verified · x402 Merchant Enabled",
+      observations: store.observations(String(row.id)),
+    }));
+
+  return [...workers, ...customAgents];
 }
 
 export async function collectBids(store: JobStore, job: Job, merchant = DEMO_MERCHANT) {

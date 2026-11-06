@@ -100,7 +100,7 @@ export type MarketplaceAgent = {
   network: "hedera:testnet";
   asset: "0.0.0";
   capability: string;
-  designation: "first-party";
+  designation: "first-party" | "third-party";
   checkedAt: string;
   registration: "registered";
   verification: string;

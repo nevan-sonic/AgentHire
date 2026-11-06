@@ -38,6 +38,42 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
     if (!request.query.capability) return all;
     return all.filter(a => a.capability === request.query.capability);
   });
+  app.post("/api/marketplace/agents", { bodyLimit: 16384 }, async (request, reply) => {
+    const body = request.body as Record<string, unknown>;
+    const name = String(body.name || "").trim();
+    const capability = String(body.capability || "").trim();
+    const description = String(body.description || "").trim();
+    const basePrice = Number(body.basePrice) || 120000;
+    const endpoint = String(body.endpoint || "").trim();
+    const agentMerchant = String(body.merchant || merchant || "0.0.11330954").trim();
+
+    if (!name || !capability || !description) {
+      return reply.code(400).send({ error: "Missing required agent fields: name, capability, description" });
+    }
+
+    const id = "custom-" + name.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString().slice(-4);
+    const agentData = {
+      id,
+      name,
+      description,
+      capability,
+      basePrice,
+      reliabilityBps: 9800,
+      health: "online",
+      merchant: agentMerchant,
+      endpoint: endpoint || "http://127.0.0.1:3101/execute",
+      network: "hedera:testnet",
+      asset: "0.0.0",
+      maxInput: 100,
+      designation: "third-party",
+      checkedAt: new Date().toISOString(),
+      registration: "registered",
+      verification: "Community Verified · x402 Merchant Enabled",
+    };
+
+    store.agent(id, agentData);
+    return reply.code(201).send(agentData);
+  });
   app.get<{ Params: { agentId: string } }>("/api/marketplace/agents/:agentId", async (request, reply) => {
     const agent = (await discover(store, merchant)).find(row => row.id === request.params.agentId);
     return agent ?? reply.code(404).send({ error: "Agent not found" });

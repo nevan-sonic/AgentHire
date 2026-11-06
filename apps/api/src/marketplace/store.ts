@@ -53,6 +53,9 @@ export class JobStore {
   agent(id: string, data: object) {
     this.db.prepare("INSERT INTO agents VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET body=excluded.body").run(id, JSON.stringify(data));
   }
+  listCustomAgents(): Array<Record<string, unknown>> {
+    return this.db.prepare("SELECT body FROM agents").all().map(row => JSON.parse(String(row.body)) as Record<string, unknown>);
+  }
   observations(id: string) {
     const row = this.db.prepare(`SELECT count(*) FILTER (WHERE json_extract(data, '$.passed') = 1) AS passed,
       count(*) FILTER (WHERE json_extract(data, '$.passed') = 0) AS failed

@@ -16,10 +16,39 @@ export default function PublishAgent() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setPublishing(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/marketplace/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          capability: formData.capability,
+          description: formData.description,
+          basePrice: Number(formData.basePrice),
+          merchant: formData.merchantAccount,
+          endpoint: formData.endpoint,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to publish agent");
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Publishing failed");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   return (
@@ -149,12 +178,19 @@ export default function PublishAgent() {
               <p>Your agent will be cataloged on the Hedera testnet registry and verified via decentralized health probes and Bayesian reliability estimators.</p>
             </div>
 
+            {error && (
+              <div className="p-3.5 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
+                <strong>Registration Error:</strong> {error}
+              </div>
+            )}
+
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-lg bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow cursor-pointer"
+                disabled={publishing}
+                className="px-6 py-2.5 rounded-lg bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow cursor-pointer"
               >
-                Publish Agent to Network →
+                {publishing ? "Broadcasting to Hedera..." : "Publish Agent to Network →"}
               </button>
             </div>
           </form>
