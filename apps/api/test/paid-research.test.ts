@@ -1,3 +1,4 @@
+import { planPrompt } from "../src/goals/plan.js";
 import { mkdtemp, rm, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -51,7 +52,7 @@ const fakeGitHub: typeof fetch = async input => {
 };
 const fakeGroq: typeof fetch = async (_input, init) => {
   const message = JSON.parse(String(init?.body)).messages[0].content as string;
-  const value = message.startsWith("Return JSON with only steps") ? { steps } :
+  const value = message.startsWith(planPrompt) ? { steps } :
     message.startsWith("Write") ? { title: "Comparison", recommendation: "Pilot the best fit.",
       findings: names.map(name => ({ analysis: "Provides documented agent interfaces.", quote, sourceId: blob(name).sha })) } :
       { passed: true, notes: "The cited passages are present." };

@@ -55,6 +55,11 @@ export function registerGoals(app: FastifyInstance, env: NodeJS.ProcessEnv, data
   }
   app.addHook("preClose", async () => { streams.close(); });
   app.addHook("onClose", async () => { await Promise.allSettled(active); db.close(); });
+  app.get("/api/marketplace/receipts/goals", async () => selectRecent.all().flatMap(row => {
+    const goal = JSON.parse(String(row.body)) as Goal;
+    return goal.events.filter(event => event.kind === "research.payment.verified")
+      .map(event => ({ title: goal.objective, at: event.at, data: event.detail }));
+  }));
   app.get("/api/marketplace/goals", async () => selectRecent.all().map(row => {
     const goal = JSON.parse(String(row.body)) as Goal;
     return { id: goal.id, objective: goal.objective, status: goal.status, createdAt: goal.createdAt };

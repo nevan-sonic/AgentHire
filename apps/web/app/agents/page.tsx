@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { openTaskStream } from "../task-stream";
 import { Marketplace } from "../marketplace";
 
 type Agent = {
@@ -10,8 +11,9 @@ type Agent = {
   ensName?: string;
   description: string;
   capability: string;
-  basePrice: number;
-  reliabilityBps: number;
+  basePrice?: number;
+  designation?: string;
+  reliabilityBps?: number;
   health: string;
   merchant: string;
   endpoint: string;
@@ -135,6 +137,10 @@ export default function AgentsMarketplace() {
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!/\.(csv|tsv|txt|json|md)$/i.test(file.name) || file.size > 4000) {
+      setError("Attach a text, CSV, TSV, JSON, or Markdown file up to 4 KB.");
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -156,25 +162,21 @@ export default function AgentsMarketplace() {
     setResult(null);
     setError(null);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    let url = `${apiUrl}/api/orchestrator/stream?prompt=${encodeURIComponent(taskPrompt.trim())}&targetCapability=${encodeURIComponent(activeAgent.capability)}`;
-    if (attachedFile) {
-      url += `&fileName=${encodeURIComponent(attachedFile.name)}&fileContent=${encodeURIComponent(attachedFile.content.slice(0, 4000))}`;
-    }
-    const eventSource = new EventSource(url);
+    const eventSource = openTaskStream({ prompt: taskPrompt.trim(), targetCapability: activeAgent.capability,
+      fileName: attachedFile?.name, fileContent: attachedFile?.content.slice(0, 4000) });
 
-    eventSource.addEventListener("log", (e: MessageEvent) => {
+    eventSource.addEventListener("log", (event: Event) => {
       try {
-        const entry: AgentLogEntry = JSON.parse(e.data);
+        const entry: AgentLogEntry = JSON.parse((event as MessageEvent).data);
         setLogs((prev) => [...prev, entry]);
       } catch (err) {
         console.error("Log parse error", err);
       }
     });
 
-    eventSource.addEventListener("done", (e: MessageEvent) => {
+    eventSource.addEventListener("done", (event: Event) => {
       try {
-        const finalData: FinalResult = JSON.parse(e.data);
+        const finalData: FinalResult = JSON.parse((event as MessageEvent).data);
         setResult(finalData);
         setRunning(false);
         eventSource.close();
@@ -185,10 +187,10 @@ export default function AgentsMarketplace() {
       }
     });
 
-    eventSource.addEventListener("error", (e: any) => {
-      if (e?.data) {
+    eventSource.addEventListener("error", (event: Event) => {
+      if ((event as MessageEvent).data) {
         try {
-          const errObj = JSON.parse(e.data);
+          const errObj = JSON.parse((event as MessageEvent).data);
           setError(errObj.error || "Execution halted");
         } catch {
           setError("Task failed during execution");
@@ -198,10 +200,6 @@ export default function AgentsMarketplace() {
       eventSource.close();
     });
 
-    eventSource.onerror = () => {
-      setRunning(false);
-      eventSource.close();
-    };
   }
 
   const showFileUpload = activeAgent && (
@@ -219,13 +217,13 @@ export default function AgentsMarketplace() {
             <div className="flex items-center gap-2 mb-2 font-mono text-[11px] text-slate-400">
               <span className="uppercase tracking-wider font-semibold">Decentralized Registry</span>
               <span className="text-white/20">/</span>
-              <span>HCS Validated</span>
+              <span>Live provider status</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
               Specialist Agent Marketplace
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-              Browse and subcontract autonomous AI specialists. Click <strong>"Invoke Agent"</strong> on any card to open the interactive input panel and delegate tasks directly.
+              Browse and subcontract autonomous AI specialists. Click <strong>Invoke Agent</strong> on any card to open the interactive input panel and delegate tasks directly.
             </p>
           </div>
 
@@ -258,7 +256,7 @@ export default function AgentsMarketplace() {
         {loading ? (
           <div className="py-20 text-center text-slate-400 text-xs font-mono flex items-center justify-center gap-2.5">
             <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
-            Loading registry agents from Hedera...
+            Loading agent directory…
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -274,7 +272,7 @@ export default function AgentsMarketplace() {
                     </span>
                     <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>Online</span>
+                      <span>{agent.health === "online" ? "Online" : "Unavailable"}</span>
                     </div>
                   </div>
 
@@ -296,13 +294,13 @@ export default function AgentsMarketplace() {
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-sans">Task Fee</span>
                       <span className="font-semibold text-white">
-                        {(agent.basePrice / 100_000_000).toFixed(4)} HBAR
+                        {agent.basePrice === undefined ? "Direct run" : `${agent.basePrice.toLocaleString()} tinybars`}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-sans">Reliability</span>
                       <span className="text-sky-400 font-semibold">
-                        {(agent.reliabilityBps / 100).toFixed(1)}% Bayesian
+                        {agent.reliabilityBps === undefined ? "Unmeasured" : `${(agent.reliabilityBps / 100).toFixed(1)}% Bayesian`}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -318,10 +316,10 @@ export default function AgentsMarketplace() {
                   <span className="text-[11px] font-mono text-slate-500">ID: {agent.id}</span>
                   <button
                     type="button"
-                    onClick={() => openInvokePanel(agent)}
+                    disabled={agent.designation === "third-party" || agent.health !== "online"} onClick={() => openInvokePanel(agent)}
                     className="pill-action text-xs cursor-pointer py-1.5 px-3.5"
                   >
-                    <span>Invoke Agent</span>
+                    <span>{agent.designation === "third-party" ? "Onboarding required" : "Invoke Agent"}</span>
                     <span>→</span>
                   </button>
                 </div>
@@ -343,7 +341,7 @@ export default function AgentsMarketplace() {
                     </span>
                     <span className="text-slate-500 font-mono text-xs">·</span>
                     <span className="text-xs font-mono text-slate-300">
-                      Fee: {(activeAgent.basePrice / 100_000_000).toFixed(4)} HBAR
+                      Direct run · no HBAR payment
                     </span>
                   </div>
                   <h2 className="text-xl font-bold text-white tracking-tight">
@@ -383,7 +381,7 @@ export default function AgentsMarketplace() {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleFileUpload}
-                        accept=".csv,.xlsx,.xls,.tsv,.pdf,.docx,.doc,.txt,.json,.md"
+                        accept=".csv,.tsv,.txt,.json,.md"
                         className="hidden"
                       />
                       <button
@@ -415,7 +413,7 @@ export default function AgentsMarketplace() {
 
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-[11px] font-mono text-slate-400">
-                    Settlement: x402 Micropayment on Hedera
+                    Direct execution · no HBAR payment
                   </span>
                   <button
                     type="submit"
@@ -485,7 +483,7 @@ export default function AgentsMarketplace() {
                 <div className="sharp-card p-4 space-y-3 bg-[#131822]">
                   <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
                     <h3 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      ✓ Deliverable Verified
+                      Deliverable returned
                     </h3>
                     {result.payment?.explorerUrl && (
                       <a

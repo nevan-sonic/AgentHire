@@ -49,9 +49,8 @@ export class GroqClient {
         }
       }
       if (!response.ok) {
-        let errBody = "";
-        try { errBody = await response.text(); } catch {}
-        throw new Error(`Groq rejected the request (HTTP ${response.status}): ${errBody.slice(0, 300)}`);
+        await response.body?.cancel();
+        throw new Error(`Groq rejected the request (HTTP ${response.status})`);
       }
       const payload = await readBounded(response, 64_000).catch(() => { throw new Error("Invalid or oversized Groq response"); });
       if (!isRecord(payload) || !Array.isArray(payload.choices) || !isRecord(payload.usage)) throw new Error("Invalid Groq response");

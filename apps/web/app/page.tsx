@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { openTaskStream } from "./task-stream";
 import { Marketplace } from "./marketplace";
 
 type AgentLogEntry = {
@@ -86,6 +88,10 @@ export default function Home() {
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!/\.(csv|tsv|txt|json|md)$/i.test(file.name) || file.size > 4000) {
+      setError("Attach a text, CSV, TSV, JSON, or Markdown file up to 4 KB.");
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -114,7 +120,6 @@ export default function Home() {
     setResult(null);
     setError(null);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
     const categoryMap: Record<string, string> = {
       RESEARCH: "web.research",
       CODING: "code.generation",
@@ -122,25 +127,21 @@ export default function Home() {
       REPORT_WRITER: "document.report",
       DOC_SUMMARIZER: "document.summarize",
     };
-    const capParam = selectedCategory && categoryMap[selectedCategory] ? `&targetCapability=${encodeURIComponent(categoryMap[selectedCategory])}` : "";
-    let url = `${apiUrl}/api/orchestrator/stream?prompt=${encodeURIComponent(prompt.trim())}${capParam}`;
-    if (attachedFile) {
-      url += `&fileName=${encodeURIComponent(attachedFile.name)}&fileContent=${encodeURIComponent(attachedFile.content.slice(0, 4000))}`;
-    }
-    const eventSource = new EventSource(url);
+    const eventSource = openTaskStream({ prompt: prompt.trim(), targetCapability: selectedCategory ? categoryMap[selectedCategory] : undefined,
+      fileName: attachedFile?.name, fileContent: attachedFile?.content.slice(0, 4000) });
 
-    eventSource.addEventListener("log", (e: MessageEvent) => {
+    eventSource.addEventListener("log", (event: Event) => {
       try {
-        const entry: AgentLogEntry = JSON.parse(e.data);
+        const entry: AgentLogEntry = JSON.parse((event as MessageEvent).data);
         setLogs((prev) => [...prev, entry]);
       } catch (err) {
         console.error("Log parse error", err);
       }
     });
 
-    eventSource.addEventListener("done", (e: MessageEvent) => {
+    eventSource.addEventListener("done", (event: Event) => {
       try {
-        const finalData: FinalResult = JSON.parse(e.data);
+        const finalData: FinalResult = JSON.parse((event as MessageEvent).data);
         setResult(finalData);
         setLoading(false);
         eventSource.close();
@@ -151,10 +152,10 @@ export default function Home() {
       }
     });
 
-    eventSource.addEventListener("error", (e: any) => {
-      if (e?.data) {
+    eventSource.addEventListener("error", (event: Event) => {
+      if ((event as MessageEvent).data) {
         try {
-          const errObj = JSON.parse(e.data);
+          const errObj = JSON.parse((event as MessageEvent).data);
           setError(errObj.error || "Execution halted");
         } catch {
           setError("Task failed during execution");
@@ -164,10 +165,6 @@ export default function Home() {
       eventSource.close();
     });
 
-    eventSource.onerror = () => {
-      setLoading(false);
-      eventSource.close();
-    };
   }
 
   return (
@@ -185,7 +182,7 @@ export default function Home() {
               Agent Orchestration & Execution Mesh
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
-              Dispatch multi-step workflows. The Lead Orchestrator evaluates requirements, discovers specialists, executes PoCP verification challenges, and settles payments on Hedera.
+              Run a specialist directly, or open a procurement workspace to compare real bids and review an authorized Hedera x402 payment.
             </p>
           </div>
 
@@ -233,7 +230,7 @@ export default function Home() {
                   <svg className="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>x402 Micropayments over Hedera</span>
+                  <Link href="/goals">Research procurement</Link><Link href="/jobs/new">Statistics procurement</Link>
                 </div>
               </div>
             </div>
@@ -310,7 +307,7 @@ export default function Home() {
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileUpload}
-                      accept=".csv,.xlsx,.xls,.tsv,.pdf,.docx,.doc,.txt,.json,.md"
+                      accept=".csv,.tsv,.txt,.json,.md"
                       className="hidden"
                     />
                     <button
@@ -502,7 +499,7 @@ export default function Home() {
                   <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
-                  Verified Task Deliverable
+                  Task Deliverable
                 </h3>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400 font-mono">Executed by:</span>

@@ -69,7 +69,7 @@ test("retries bounded rate limits without allowing redirects or model tools", as
     assert.equal(options?.redirect, "error");
     const request = JSON.parse(String(options?.body));
     assert.equal(request.tools, undefined);
-    assert.equal(request.max_completion_tokens, 1800);
+    assert.equal(request.max_completion_tokens, 4096);
     if (++calls === 1) return new Response(null, { status: 429, headers: { "retry-after": "0" } });
     return completion({ ok: true });
   };
