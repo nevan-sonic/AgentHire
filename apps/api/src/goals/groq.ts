@@ -23,7 +23,7 @@ export class GroqClient {
     if (content.length + instruction.length > 14_000) throw new Error("Inference input exceeds the goal limit");
     // Conservative UTF-8 byte reservation accounts for unknown usage after a timeout.
     const reserve = Buffer.byteLength(content + instruction) + outputLimit + 256;
-    const model = this.env[`GROQ_${role}_MODEL`] ?? "llama-3.1-8b-instant";
+    const model = this.env[`GROQ_${role}_MODEL`] ?? "openai/gpt-oss-20b";
     if (!/^[a-z0-9][a-z0-9./_-]{0,99}$/i.test(model)) throw new Error("Invalid Groq model configuration");
     for (let attempt = 0; attempt < 2; attempt++) {
       if (this.requests >= maxCalls || this.reserved + reserve > maxTokens) throw new Error("Goal inference budget exhausted");

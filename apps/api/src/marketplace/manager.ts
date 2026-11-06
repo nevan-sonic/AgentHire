@@ -105,7 +105,7 @@ export async function discover(store: JobStore, env: NodeJS.ProcessEnv = {}) {
       });
       if (response.ok) {
         const body: unknown = await response.json();
-        const required = [env.GROQ_MANAGER_MODEL ?? "llama-3.1-8b-instant", env.GROQ_WORKER_MODEL ?? "llama-3.1-8b-instant"];
+        const required = [env.GROQ_MANAGER_MODEL ?? "openai/gpt-oss-20b", env.GROQ_WORKER_MODEL ?? "openai/gpt-oss-20b"];
         online = isRecord(body) && Array.isArray(body.data) &&
           required.every(id => (body.data as unknown[]).some((model: unknown) => isRecord(model) && model.id === id));
       } else await response.body?.cancel();
