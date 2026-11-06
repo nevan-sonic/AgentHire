@@ -49,7 +49,7 @@ export class WorkerRegistry {
 }
 
 export function createDemoRegistry(port = 3001, merchant = DEMO_MERCHANT, now = Date.now,
-  fixtures: Partial<Record<string, "correct" | "incorrect" | "timeout" | "error">> = {}) {
+  fixtures: Partial<Record<string, "correct" | "incorrect" | "timeout" | "error">> = {}, testPriceTinybars = "5000") {
   const registry = new WorkerRegistry();
   const seeds = [
     { workerId: "economy", displayName: "Economy Statistics Worker", description: "Low-price summary adapter",
@@ -68,7 +68,7 @@ export function createDemoRegistry(port = 3001, merchant = DEMO_MERCHANT, now = 
     registry.register({
       profile,
       capabilityTest: {
-        priceTinybars: "5000",
+        priceTinybars: testPriceTinybars,
         timeoutMs: 50,
         async run(input, signal) {
           signal.throwIfAborted();

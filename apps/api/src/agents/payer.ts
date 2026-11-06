@@ -57,8 +57,12 @@ export class SpendingPolicy {
 }
 
 export async function requestWorkerQuote(policy: SpendingPolicy, values: number[]) {
+  return requestResourceQuote(policy, { values });
+}
+
+async function requestResourceQuote(policy: SpendingPolicy, input: object) {
   const response = await fetch(policy.endpoint, {
-    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ values }),
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
     redirect: "error", signal: AbortSignal.timeout(5_000),
   });
   const header = response.headers.get("payment-required");
@@ -84,10 +88,38 @@ export async function payWorker(
   payer: string,
   sign: (quote: PaymentRequired) => Promise<PaymentPayload>,
 ) {
+  const { worker, ...evidence } = await payForResource(policy, { values }, payer, sign);
+  const { count, min, max, mean } = (worker ?? {}) as Record<string, unknown>;
+  if (count !== values.length || ![min, max, mean].every((value) =>
+    typeof value === "number" && Number.isFinite(value))) {
+    throw new Error(`Payment settled but worker result could not be confirmed. Check ${evidence.explorer} before retrying.`);
+  }
+  return { ...evidence, worker: { count, min, max, mean } };
+}
+
+export class PaymentAttemptError extends Error {
+  constructor(readonly state: "failed" | "uncertain", readonly transactionId?: string) {
+    super(transactionId ? `Payment or worker result could not be confirmed. Check ${paymentExplorerUrl(transactionId)} before retrying.`
+      : "Could not prepare an authorized Hedera payment");
+  }
+}
+
+export async function payForResource(
+  policy: SpendingPolicy,
+  input: object,
+  payer: string,
+  sign: (quote: PaymentRequired) => Promise<PaymentPayload>,
+  hooks?: {
+    authorize(quote: PaymentRequired): Promise<void>;
+    submitted(transactionId: string): Promise<void>;
+    settled(transactionId: string): Promise<void>;
+  },
+) {
   if (!validPayer(payer, policy.merchant)) throw new Error("Payer, merchant, and facilitator must be distinct");
-  const { quote, requirement } = await requestWorkerQuote(policy, values);
+  const { quote, requirement } = await requestResourceQuote(policy, input);
   // Reserve before signing. Keep the reservation even if the outcome is uncertain.
   policy.reserve(quote);
+  await hooks?.authorize(quote);
   let signature: string;
   let transactionId: string;
   try {
@@ -97,34 +129,35 @@ export async function payWorker(
     transactionId = inspected.transactionId;
     signature = encodePaymentSignatureHeader(payload);
   } catch {
-    throw new Error("Could not prepare an authorized Hedera payment");
+    throw new PaymentAttemptError("failed");
   }
 
   const explorer = paymentExplorerUrl(transactionId);
+  await hooks?.submitted(transactionId);
   try {
     const response = await fetch(policy.endpoint, {
       method: "POST", headers: { "content-type": "application/json", "PAYMENT-SIGNATURE": signature },
-      body: JSON.stringify({ values }), redirect: "error", signal: AbortSignal.timeout(30_000),
+      body: JSON.stringify(input), redirect: "error", signal: AbortSignal.timeout(30_000),
     });
     const header = response.headers.get("payment-response");
     if (!response.ok || !header || header.length > 8_192) {
       await response.body?.cancel();
+      if (response.status === 400 || response.status === 402) throw new PaymentAttemptError("failed", transactionId);
       throw new Error();
     }
     const settlement = decodePaymentResponseHeader(header);
     if (!confirmsSettlement(settlement, transactionId) || settlement.payer !== payer ||
         settlement.amount !== requirement.amount) throw new Error();
 
-    const data = await response.json() as Record<string, unknown>;
-    const { count, min, max, mean } = data;
-    if (count !== values.length || ![min, max, mean].every((value) =>
-      typeof value === "number" && Number.isFinite(value))) throw new Error();
+    await hooks?.settled(transactionId);
+    const worker: unknown = await response.json().catch(() => null);
     return {
       transactionId, explorer, network: X402_NETWORK, asset: X402_ASSET,
       amountTinybars: requirement.amount, payer, merchant: policy.merchant,
-      status: "facilitator-settled", worker: { count, min, max, mean },
+      status: "facilitator-settled", worker,
     };
-  } catch {
-    throw new Error(`Payment or worker result could not be confirmed. Check ${explorer} before retrying.`);
+  } catch (error) {
+    if (error instanceof PaymentAttemptError) throw error;
+    throw new PaymentAttemptError("uncertain", transactionId);
   }
 }

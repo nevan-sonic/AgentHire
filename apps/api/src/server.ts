@@ -5,6 +5,10 @@ import { createDemoRegistry } from "./agents/workers.js";
 import { registerHederaStatus } from "./routes/hedera.js";
 import { registerX402Worker } from "./routes/x402-worker.js";
 import { registerProcurementRoutes } from "./routes/procurement.js";
+import { registerCapabilityWorker } from "./routes/capability-worker.js";
+import { CAPABILITY_PATH, lookupPayerAccount } from "./x402/capability-binding.js";
+import { capabilityTestPrice } from "./x402/capability-config.js";
+import { loadHederaMirrorNodeUrl } from "./config/hedera.js";
 import { loadX402Config, X402_FACILITATOR } from "./x402/config.js";
 import { filePaymentClaims } from "./x402/replay.js";
 
@@ -33,13 +37,19 @@ try {
 
   registerHederaStatus(app, process.env);
   const x402 = process.env.X402_ENABLED === "true" ? loadX402Config(process.env, port) : undefined;
-  const registry = createDemoRegistry(port, x402?.merchant);
+  const registry = createDemoRegistry(port, x402?.merchant, Date.now, {}, capabilityTestPrice(process.env));
   registerProcurementRoutes(app, registry, Boolean(x402));
   if (x402) {
     const facilitator = new HTTPFacilitatorClient({ url: X402_FACILITATOR, timeoutMs: 12_000 });
     const claimPayment = filePaymentClaims(fileURLToPath(new URL("../../../.agenthire-x402/", import.meta.url)));
     registerX402Worker(app, {
       ...x402, facilitator, claimPayment,
+    });
+    const mirror = loadHederaMirrorNodeUrl(process.env);
+    const capabilityWorkers = createDemoRegistry(port, x402.merchant, Date.now, { economy: "incorrect" }, capabilityTestPrice(process.env));
+    registerCapabilityWorker(app, capabilityWorkers, {
+      endpoint: new URL(CAPABILITY_PATH, x402.endpoint).href, merchant: x402.merchant,
+      facilitator, claimPayment, payerKey: async (payer) => (await lookupPayerAccount(mirror, payer)).publicKey,
     });
     for (const { profile } of registry.discover()) {
       registerX402Worker(app, {

@@ -394,7 +394,25 @@ pnpm --filter @agenthire/api pocp:demo
 | Insufficient budget | A 600,000-tinybar budget leaves no affordable hire after the test. Skip and retain Economy. |
 | Failed test | Economy returns an incorrect mean. Its posterior falls to 2/5 and the final choice changes to Balanced. |
 
-The test is an offline simulation with a priced budget reservation. The trace reports zero committed on-chain spend and separates simulated test cost, projected hire cost, and remaining budget. The payment plan carries `paymentAuthorized: false` and marks test payment as `simulated` or `not_required`. Pending HCS records carry the test outcome and evidence hash. A future paid test needs its own x402 quote, settlement, and authorization. The model assumes the micro-test is informative about later success, and the fixture behavior and priors have no real-world calibration.
+In simulation, the trace reports zero committed on-chain spend and separates simulated test cost, projected hire cost, and remaining budget. The payment plan carries `paymentAuthorized: false` and marks test payment as `simulated` or `not_required`. Pending HCS records carry the test outcome and evidence hash. Live tests require their own x402 quote, settlement, and authorization. The model assumes the micro-test is informative about later success, and the fixture behavior and priors have no real-world calibration.
+
+### Paid capability-test demo
+
+`POST /api/workers/capability-test` is available when the local x402 worker is enabled. Send `taskId`, `testId`, `workerId`, `capability`, and `input`. The test ID follows `<taskId>-<workerId>-statistics-v1`. The endpoint validates the request, returns an x402 v2 HTTP 402 quote, and releases the selected adapter's output only after the official facilitator confirms settlement. The adapter receives the test input. The manager keeps the reference answer and grades the output independently.
+
+The test price defaults to **5,000 tinybars (0.00005 HBAR)**. `POCP_TEST_PRICE_TINYBARS` configures the price between 1 and 100,000 tinybars, below every production-worker quote in the demo. The quote includes a digest of the task, test, worker, capability, and input. The payer signs a separate application binding over that digest, the endpoint and quote terms, and the hash of the signed Hedera transfer. The worker verifies the binding against the payer's indexed public key before passing the standard transfer to the facilitator. This prevents a proof issued for one capability test from unlocking a different request.
+
+```bash
+pnpm --filter @agenthire/api pocp:paid-demo
+```
+
+The default CLI run is a simulation. The public procurement API also stays in simulation. The demo values one test with a 400,000-tinybar failure penalty and protects 750,000 tinybars for the more expensive hire across the two possible outcomes. The local Economy fixture returns an incorrect mean, which changes the selected worker to Balanced. The workers share an API process and their fixture behavior and priors are illustrative. Offline tests exercise TEST, SKIP, incorrect output, rejected quotes, failed settlement, and delayed or uncertain settlement with a mocked facilitator.
+
+For a separately authorized live test, configure the existing x402 merchant and dedicated payer in the ignored root `.env`, enable `X402_ENABLED`, and restart the API. Then set `POCP_LIVE_ENABLED=true`, a unique `POCP_LIVE_TASK_ID` for the authorized attempt, `POCP_LIVE_AUTHORIZED_PRICE_TINYBARS` to the exact approved price, `POCP_LIVE_MAX_TOTAL_TINYBARS=1000000`, `POCP_LIVE_FINAL_HIRE_RESERVE_TINYBARS=750000`, and `POCP_LIVE_EXPIRES_AT` to the approval's expiration time in ISO UTC. The CLI requires the Economy test to match the approved operation and uses the existing payer and fee controls. Run `pnpm --filter @agenthire/api pocp:paid-demo --execute` only after that authorization. The final production bid is a plan for later approval.
+
+The attempt journal records `planned`, `quoted`, `authorized`, and `submitted` before the associated actions advance. Facilitator confirmation records `settled`. A matching Mirror Node transfer advances it to `verified`. Definite rejection reports `failed`, and an ambiguous submission reports `uncertain` and protects the test amount as a reservation. A settled payment with delayed indexing remains settled pending independent verification. The ignored `.agenthire-x402/` journal prevents another attempt for the same task across CLI restarts. Keep the journal and reconcile the recorded transaction before any further authorization.
+
+The manager charges live test spend only after settlement confirmation and rechecks final-hire affordability. Pending HCS records include a `PAYMENT_SETTLED` reference when applicable, without private input or signed payment credentials. Live paid PoCP settlement has not yet been verified.
 
 ## References
 

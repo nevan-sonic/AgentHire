@@ -7,6 +7,7 @@ import { integerIn, isRecord, parseProcurementTask, tinybars } from "./task.js";
 import { compareWorkerIds } from "./workers.js";
 import type { WorkerAdapter, WorkerRegistry } from "./workers.js";
 import { adaptiveProcurement } from "./pocp.js";
+import type { PaidTestExecutor } from "./pocp.js";
 
 const bidFields = [
   "bidId", "taskId", "workerId", "capability", "priceTinybars", "estimatedLatencyMs",
@@ -91,7 +92,7 @@ function pendingAudit(
 export async function procure(
   input: ProcurementTask,
   registry: WorkerRegistry,
-  options: { bidTimeoutMs?: number; now?: () => number; paymentEnabled?: boolean } = {},
+  options: { bidTimeoutMs?: number; now?: () => number; paymentEnabled?: boolean; paidTestExecutor?: PaidTestExecutor } = {},
 ) {
   const task = parseProcurementTask(input);
   const now = options.now ?? Date.now;
@@ -115,7 +116,7 @@ export async function procure(
   const eligibleBids = bidsReceived.flatMap((receipt) => receipt.status === "eligible" ? [receipt.bid] : [])
     .sort((a, b) => compareBids(a, b, task.selectionStrategy));
   const adaptive = task.selectionStrategy === "adaptive_pocp"
-    ? await adaptiveProcurement(task, eligibleBids, discovered, start + task.deadlineMs, now) : null;
+    ? await adaptiveProcurement(task, eligibleBids, discovered, start + task.deadlineMs, now, options.paidTestExecutor) : null;
   const winningBid = adaptive ? adaptive.winningBid : eligibleBids[0] ?? null;
   const finalTimestamp = adaptive ? new Date(now()).toISOString() : timestamp;
   const selectedWorker = discoveredWorkers.find((worker) => worker.workerId === winningBid?.workerId) ?? null;
@@ -138,8 +139,15 @@ export async function procure(
   const pendingAuditRecords = [
     pendingAudit(task, "JOB_CREATED", timestamp),
     ...bidsReceived.flatMap(({ bid }) => bid ? [pendingAudit(task, "BID_SUBMITTED", timestamp, bid)] : []),
-    ...(testMetadata && observed ? [
+    ...(testMetadata ? [
       pendingAudit(task, "CAPABILITY_TEST_REQUESTED", timestamp, undefined, testMetadata),
+    ] : []),
+    ...(testMetadata && adaptive?.payment?.evidence && BigInt(adaptive.payment.spentTinybars) > 0n ? [
+      pendingAudit(task, "PAYMENT_SETTLED", finalTimestamp, undefined, {
+        ...testMetadata, paymentTransactionId: adaptive.payment.evidence.transactionId,
+      }),
+    ] : []),
+    ...(testMetadata && observed ? [
       pendingAudit(task, "CAPABILITY_TEST_COMPLETED", finalTimestamp, undefined, {
         ...testMetadata, outcome: observed.passed ? "success" : "failure", artifactHash: observed.evidenceHash,
       }),
@@ -148,7 +156,7 @@ export async function procure(
   ];
   const paymentPlan: PocpPaymentPlan | null = adaptive ? {
     test: test ? { testId: test.testId, workerId: test.workerId, priceTinybars: test.priceTinybars } : null,
-    testPaymentStatus: test ? "simulated" : "not_required",
+    testPaymentStatus: adaptive.payment?.state ?? (test ? "simulated" : "not_required"),
     finalWorker: paymentHandoff,
     finalBid: winningBid,
     totalBudgetTinybars: task.maxBudgetTinybars,

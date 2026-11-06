@@ -70,7 +70,8 @@ export type ProcurementPaymentHandoff = {
 
 export type PocpPaymentPlan = {
   test: { testId: string; workerId: string; priceTinybars: string } | null;
-  testPaymentStatus: "not_required" | "simulated" | "pending";
+  testPaymentStatus: "not_required" | "simulated" | "pending" | "planned" | "quoted" |
+    "authorized" | "submitted" | "settled" | "verified" | "failed" | "uncertain";
   finalWorker: ProcurementPaymentHandoff | null;
   finalBid: ProcurementBid | null;
   totalBudgetTinybars: string;
