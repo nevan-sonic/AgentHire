@@ -18,7 +18,7 @@ type BidReceipt =
   | { workerId: string; status: "eligible"; bid: ProcurementBid }
   | { workerId: string; status: "rejected"; reason: string; bid?: ProcurementBid };
 
-function assessBid(value: unknown, task: ProcurementTask, worker: WorkerProfile, now: number, remainingMs: number): BidReceipt {
+export function assessBid(value: unknown, task: ProcurementTask, worker: WorkerProfile, now: number, remainingMs: number): BidReceipt {
   const { workerId } = worker;
   const reject = (reason: string, bid?: ProcurementBid): BidReceipt => ({ workerId, status: "rejected", reason, bid });
   if (!isRecord(value) || Object.keys(value).length !== bidFields.length ||
@@ -50,7 +50,7 @@ function assessBid(value: unknown, task: ProcurementTask, worker: WorkerProfile,
   return { workerId, status: "eligible", bid };
 }
 
-async function requestBid(worker: WorkerAdapter, task: ProcurementTask, timeoutMs: number) {
+export async function requestBid(worker: WorkerAdapter, task: ProcurementTask, timeoutMs: number) {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

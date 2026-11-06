@@ -12,6 +12,7 @@ export function compareWorkerIds(left: string, right: string) {
 export interface WorkerAdapter {
   profile: WorkerProfile;
   bid(task: Readonly<ProcurementTask>, signal: AbortSignal): Promise<unknown>;
+  executeTask?(input: readonly number[]): Promise<unknown>;
   capabilityTest?: {
     priceTinybars: string;
     timeoutMs: number;
@@ -35,7 +36,7 @@ export class WorkerRegistry {
     }
     const profile = structuredClone(worker.profile);
     const test = worker.capabilityTest;
-    this.workers.set(workerId, { profile, bid: worker.bid.bind(worker),
+    this.workers.set(workerId, { profile, bid: worker.bid.bind(worker), executeTask: worker.executeTask?.bind(worker),
       capabilityTest: test && { priceTinybars: test.priceTinybars, timeoutMs: test.timeoutMs, run: test.run.bind(test) } });
   }
 
@@ -67,6 +68,7 @@ export function createDemoRegistry(port = 3001, merchant = DEMO_MERCHANT, now = 
     };
     registry.register({
       profile,
+      async executeTask(input) { return summarizeStatistics(input); },
       capabilityTest: {
         priceTinybars: testPriceTinybars,
         timeoutMs: 50,

@@ -6,6 +6,7 @@ import { registerHederaStatus } from "./routes/hedera.js";
 import { registerX402Worker } from "./routes/x402-worker.js";
 import { registerProcurementRoutes } from "./routes/procurement.js";
 import { registerCapabilityWorker } from "./routes/capability-worker.js";
+import { registerHireWorker } from "./routes/hire-worker.js";
 import { CAPABILITY_PATH, lookupPayerAccount } from "./x402/capability-binding.js";
 import { capabilityTestPrice } from "./x402/capability-config.js";
 import { loadHederaMirrorNodeUrl } from "./config/hedera.js";
@@ -51,7 +52,13 @@ try {
       endpoint: new URL(CAPABILITY_PATH, x402.endpoint).href, merchant: x402.merchant,
       facilitator, claimPayment, payerKey: async (payer) => (await lookupPayerAccount(mirror, payer)).publicKey,
     });
-    for (const { profile } of registry.discover()) {
+    for (const worker of registry.discover()) {
+      const { profile } = worker;
+      if (profile.workerId === "balanced") {
+        registerHireWorker(app, worker, { endpoint: profile.endpoint, merchant: profile.merchant,
+          facilitator, claimPayment, payerKey: async (payer) => (await lookupPayerAccount(mirror, payer)).publicKey });
+        continue;
+      }
       registerX402Worker(app, {
         endpoint: profile.endpoint, merchant: profile.merchant,
         path: new URL(profile.endpoint).pathname, priceTinybars: profile.priceTinybars,

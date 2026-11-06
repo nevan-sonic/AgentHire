@@ -27,9 +27,10 @@ export function capabilityDigest(request: CapabilityRequest) {
   ])).digest("hex");
 }
 
-export function bindingBytes(request: CapabilityRequest, endpoint: string, quote: PaymentRequirements, transaction: string) {
+export function bindingBytes(request: CapabilityRequest, endpoint: string, quote: PaymentRequirements, transaction: string,
+  domain = CAPABILITY_EXTENSION) {
   return Buffer.from(JSON.stringify([
-    CAPABILITY_EXTENSION, 1, capabilityDigest(request), endpoint, quote.payTo, quote.network, quote.asset,
+    domain, 1, capabilityDigest(request), endpoint, quote.payTo, quote.network, quote.asset,
     quote.scheme, quote.amount, quote.extra?.feePayer, quote.maxTimeoutSeconds,
     createHash("sha256").update(transaction).digest("hex"),
   ]));

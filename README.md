@@ -433,6 +433,26 @@ The manager chose **TEST** for `paid-pocp-live-001` because the estimated net va
 
 The failed test changed the final selection from Economy to **Balanced**. After the settled test payment, **995,000 tinybars** remained. Balanced's **750,000-tinybar** bid fits the protected reserve and would leave **245,000 tinybars** after a future hire. The final hire is planned and unpaid. The HCS records remain pending.
 
+### Complete the selected hire
+
+The final-hire CLI resumes `paid-pocp-live-001` from the local Step 09 journal and repository-pinned evidence. It checks the original test transaction on the Mirror Node, recomputes the capability evidence hash, and reconstructs the original dataset and Balanced selection. The old bid has expired. The CLI requests a fresh offer only from Balanced and checks that the price and trusted payment destination still match. Preserve the original ignored `.agenthire-x402/` directory to resume this task.
+
+Balanced serves the production request at `POST /api/workers/analyze/balanced`. The body contains the task ID, accepted bid ID, worker ID, capability, and original input. The x402 quote binds those fields to the exact price and merchant. The worker verifies the payer's request signature against the indexed public key, then releases the Balanced adapter's output after facilitator settlement. The adapter runs locally in the same API process as the other demo workers.
+
+Start the API with `X402_ENABLED=true` and `X402_MERCHANT_ID=0.0.11330954` in the ignored root `.env`, then preview the live HTTP 402 quote:
+
+```bash
+pnpm --filter @agenthire/api procurement:complete
+```
+
+The preview checks the refreshed bid, available budget, and quote and displays the expected summary `{"count":4,"min":2,"max":8,"mean":5}`. It never signs a payment.
+
+After separate authorization for exactly one final hire, set `HIRE_LIVE_ENABLED=true`, `HIRE_LIVE_TASK_ID=paid-pocp-live-001`, `HIRE_LIVE_AUTHORIZED_TINYBARS=750000`, `HIRE_LIVE_MAX_TOTAL_TINYBARS=1000000`, and `HIRE_LIVE_EXPIRES_AT` to the approval expiry in ISO UTC. Use the existing dedicated x402 payer credentials. Only then run `pnpm --filter @agenthire/api procurement:complete --execute`.
+
+The final hire uses a separate durable attempt journal linked to the same task. An existing attempt is referenced and reconciled through read-only Mirror Node checks. The CLI never starts a second payment for that task. The ledger distinguishes settled test and hire spending, reservations, and available budget. An uncertain settlement holds the hire reservation, while a definite rejection releases it. The facilitator sponsors the network fee, which is outside the payer budget.
+
+Completion requires independently verified settlement and output. The evaluator computes a reference from the original task input, checks count, min, max, and mean, and hashes the input, sanitized observed output, and evaluation. A wrong answer keeps the payment record and marks the task failed. Pending version 1 HCS records contain transaction references and digests. Final-hire settlement is pending live verification.
+
 ## References
 
 - [x402 protocol specification and reference implementations](https://github.com/x402-foundation/x402)

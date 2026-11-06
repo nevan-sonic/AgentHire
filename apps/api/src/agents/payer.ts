@@ -60,7 +60,7 @@ export async function requestWorkerQuote(policy: SpendingPolicy, values: number[
   return requestResourceQuote(policy, { values });
 }
 
-async function requestResourceQuote(policy: SpendingPolicy, input: object) {
+export async function requestResourceQuote(policy: SpendingPolicy, input: object) {
   const response = await fetch(policy.endpoint, {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
     redirect: "error", signal: AbortSignal.timeout(5_000),
