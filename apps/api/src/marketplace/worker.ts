@@ -33,20 +33,20 @@ export function executeStatistics(seed: Seed, input: readonly number[]) {
   return { count: values.length, min, max, mean };
 }
 
-export function createWorker(seed: Seed, env: NodeJS.ProcessEnv) {
+export function createWorker(seed: Seed, env: NodeJS.ProcessEnv, workerOrigin = origin(seed)) {
   const app = Fastify({ bodyLimit: 8192 });
-  const worker = profile(seed, env.X402_MERCHANT_ID);
+  const worker = profile(seed, env.X402_MERCHANT_ID, workerOrigin);
   app.get("/agent", async () => ({ ...worker, maxInput: seed.max, designation: "first-party", testPrice }));
   app.get("/health", async () => ({ status: "ok", workerId: seed.id }));
   app.post("/bid", async (request, reply) => {
-    try { return offer(seed, parseWorkerTask(request.body), worker.merchant); }
+    try { return offer(seed, parseWorkerTask(request.body), worker.merchant, Date.now(), workerOrigin); }
     catch { return reply.code(400).send({ error: "Unsupported task" }); }
   });
   const facilitator = new HTTPFacilitatorClient({ url: X402_FACILITATOR, timeoutMs: 12_000 });
   const mirror = loadHederaMirrorNodeUrl(env);
   const claimPayment = filePaymentClaims(fileURLToPath(new URL("../../../../.agenthire-x402/", import.meta.url)));
   for (const path of ["/capability-test", "/execute"]) {
-    const endpoint = origin(seed) + path;
+    const endpoint = workerOrigin + path;
     registerPaidResource(app, { endpoint, merchant: worker.merchant, facilitator, claimPayment, path }, {
       prepare(body) {
         const request = parseCapabilityRequest(body);

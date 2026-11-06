@@ -14,18 +14,18 @@ export const testPrice = "5000";
 export const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 export const origin = (seed: Seed) => `http://127.0.0.1:${seed.port}`;
 
-export function profile(seed: Seed, merchant = DEMO_MERCHANT): WorkerProfile {
+export function profile(seed: Seed, merchant = DEMO_MERCHANT, workerOrigin = origin(seed)): WorkerProfile {
   return {
     workerId: seed.id, displayName: seed.name, description: seed.description, pricingPolicy: "flat-per-task",
-    capabilities: [STATISTICS], taskTypes: [STATISTICS], endpoint: origin(seed) + "/execute",
+    capabilities: [STATISTICS], taskTypes: [STATISTICS], endpoint: workerOrigin + "/execute",
     merchant, available: true, reliabilitySource: "bayesian-prior", kind: "first-party-service",
     priceTinybars: String(seed.base), reliabilityBps: seed.prior, estimatedLatencyMs: 250,
   };
 }
 
-export function offer(seed: Seed, task: ProcurementTask, merchant: string, now = Date.now()): MarketplaceOffer {
+export function offer(seed: Seed, task: ProcurementTask, merchant: string, now = Date.now(), workerOrigin = origin(seed)): MarketplaceOffer {
   if (task.input.length > seed.max) throw new Error("Input exceeds worker limit");
-  const worker = profile(seed, merchant);
+  const worker = profile(seed, merchant, workerOrigin);
   const inputDigest = digest(task.input);
   const bid: ProcurementBid = {
     bidId: digest([task.taskId, seed.id, inputDigest]), workerId: seed.id, taskId: task.taskId,
@@ -34,7 +34,7 @@ export function offer(seed: Seed, task: ProcurementTask, merchant: string, now =
     expiresAt: new Date(now + 10 * 60_000).toISOString(), merchant, endpoint: worker.endpoint,
     network: X402_NETWORK, asset: X402_ASSET, status: "offered",
   };
-  return { bid, inputDigest, testPrice, testEndpoint: origin(seed) + "/capability-test", maxInput: seed.max };
+  return { bid, inputDigest, testPrice, testEndpoint: workerOrigin + "/capability-test", maxInput: seed.max };
 }
 
 export function validateOffer(value: unknown, seed: Seed, task: ProcurementTask, merchant: string, now = Date.now()): MarketplaceOffer {
