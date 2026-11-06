@@ -34,7 +34,13 @@
         "GROQ_API_KEY",
         "GROQ_MANAGER_MODEL",
         "GROQ_WORKER_MODEL",
-        "GROQ_VERIFIER_MODEL"
+        "GROQ_VERIFIER_MODEL",
+        "WLD_APP_ID",
+        "WLD_RP_ID",
+        "WLD_RP_SIGNING_KEY",
+        "WLD_PUBLISH_ACTION",
+        "ENS_NETWORK",
+        "ENS_RPC_URL"
       ]
     },
     "build": {

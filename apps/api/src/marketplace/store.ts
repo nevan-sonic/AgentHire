@@ -20,6 +20,8 @@ export class JobStore {
       CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, job TEXT NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL, at TEXT NOT NULL);
       CREATE INDEX IF NOT EXISTS job_events ON events(job, id);
       CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, body TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS publish_challenges (nonce TEXT PRIMARY KEY, signal TEXT NOT NULL, expires INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS verified_publishers (nullifier TEXT PRIMARY KEY, agent TEXT UNIQUE NOT NULL);
     `);
   }
   close() { this.db.close(); }
@@ -53,8 +55,25 @@ export class JobStore {
   agent(id: string, data: object) {
     this.db.prepare("INSERT INTO agents VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET body=excluded.body").run(id, JSON.stringify(data));
   }
+  savePublishChallenge(nonce: string, signal: string, expires: number) {
+    this.db.prepare("DELETE FROM publish_challenges WHERE expires <= ?").run(Math.floor(Date.now() / 1000));
+    this.db.prepare("INSERT INTO publish_challenges VALUES (?, ?, ?)").run(nonce, signal, expires);
+  }
+  hasPublishChallenge(nonce: string, signal: string) {
+    return Boolean(this.db.prepare("SELECT 1 FROM publish_challenges WHERE nonce=? AND signal=? AND expires>?")
+      .get(nonce, signal, Math.floor(Date.now() / 1000)));
+  }
+  publishAgent(nonce: string, signal: string, nullifier: string, id: string, data: object) {
+    this.atomic(() => {
+      if (!this.hasPublishChallenge(nonce, signal)) throw new Error("Publishing challenge expired");
+      this.db.prepare("INSERT INTO verified_publishers VALUES (?, ?)").run(nullifier, id);
+      this.db.prepare("INSERT INTO agents VALUES (?, ?)").run(id, JSON.stringify(data));
+      this.db.prepare("DELETE FROM publish_challenges WHERE nonce=?").run(nonce);
+    });
+  }
   listCustomAgents(): Array<Record<string, unknown>> {
-    return this.db.prepare("SELECT body FROM agents").all().map(row => JSON.parse(String(row.body)) as Record<string, unknown>);
+    return this.db.prepare("SELECT body FROM agents JOIN verified_publishers ON agents.id=verified_publishers.agent ORDER BY agents.rowid DESC LIMIT 100")
+      .all().map(row => JSON.parse(String(row.body)) as Record<string, unknown>);
   }
   observations(id: string) {
     const row = this.db.prepare(`SELECT count(*) FILTER (WHERE json_extract(data, '$.passed') = 1) AS passed,

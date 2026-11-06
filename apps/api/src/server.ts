@@ -1,20 +1,9 @@
 import { fileURLToPath } from "node:url";
-import { HTTPFacilitatorClient } from "@x402/core/http";
 import { registerGoals } from "./goals/routes.js";
 import { registerMarketplace } from "./marketplace/routes.js";
 import { createApp } from "./app.js";
-import { createDemoRegistry } from "./agents/workers.js";
 import { registerDemoEvidence } from "./routes/demo-evidence.js";
 import { registerHederaStatus } from "./routes/hedera.js";
-import { registerX402Worker } from "./routes/x402-worker.js";
-import { registerProcurementRoutes } from "./routes/procurement.js";
-import { registerCapabilityWorker } from "./routes/capability-worker.js";
-import { registerHireWorker } from "./routes/hire-worker.js";
-import { CAPABILITY_PATH, lookupPayerAccount } from "./x402/capability-binding.js";
-import { capabilityTestPrice } from "./x402/capability-config.js";
-import { loadHederaMirrorNodeUrl } from "./config/hedera.js";
-import { loadX402Config, X402_FACILITATOR } from "./x402/config.js";
-import { filePaymentClaims } from "./x402/replay.js";
 
 const app = createApp();
 
@@ -45,8 +34,6 @@ try {
   registerGoals(app, process.env);
   const { registerAgentOrchestrator } = await import("./routes/agent-orchestrator.js");
   registerAgentOrchestrator(app, process.env);
-  const { registerWorldIDRoutes } = await import("./routes/world-id.js");
-  registerWorldIDRoutes(app, process.env);
 
   // Automatically start marketplace worker services (ports 3101, 3102, 3103)
   const { seeds } = await import("./marketplace/protocol.js");
@@ -72,35 +59,6 @@ try {
   app.addHook("onClose", async () => {
     await Promise.allSettled([...workerApps, ...researchApps].map(w => w.close()));
   });
-  const x402 = process.env.X402_ENABLED === "true" ? loadX402Config(process.env, port) : undefined;
-  const registry = createDemoRegistry(port, x402?.merchant, Date.now, {}, capabilityTestPrice(process.env));
-  registerProcurementRoutes(app, registry, Boolean(x402));
-  if (x402) {
-    const facilitator = new HTTPFacilitatorClient({ url: X402_FACILITATOR, timeoutMs: 12_000 });
-    const claimPayment = filePaymentClaims(fileURLToPath(new URL("../../../.agenthire-x402/", import.meta.url)));
-    registerX402Worker(app, {
-      ...x402, facilitator, claimPayment,
-    });
-    const mirror = loadHederaMirrorNodeUrl(process.env);
-    const capabilityWorkers = createDemoRegistry(port, x402.merchant, Date.now, { economy: "incorrect" }, capabilityTestPrice(process.env));
-    registerCapabilityWorker(app, capabilityWorkers, {
-      endpoint: new URL(CAPABILITY_PATH, x402.endpoint).href, merchant: x402.merchant,
-      facilitator, claimPayment, payerKey: async (payer) => (await lookupPayerAccount(mirror, payer)).publicKey,
-    });
-    for (const worker of registry.discover()) {
-      const { profile } = worker;
-      if (profile.workerId === "balanced") {
-        registerHireWorker(app, worker, { endpoint: profile.endpoint, merchant: profile.merchant,
-          facilitator, claimPayment, payerKey: async (payer) => (await lookupPayerAccount(mirror, payer)).publicKey });
-        continue;
-      }
-      registerX402Worker(app, {
-        endpoint: profile.endpoint, merchant: profile.merchant,
-        path: new URL(profile.endpoint).pathname, priceTinybars: profile.priceTinybars,
-        facilitator, claimPayment,
-      });
-    }
-  }
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
   await app.listen({ port, host: "localhost" });

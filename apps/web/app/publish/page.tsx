@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { IDKitRequestWidget, proofOfHuman } from "@worldcoin/idkit";
+import type { IDKitResult, RpContext } from "@worldcoin/idkit";
+import { stringToHex } from "viem";
 import { Marketplace } from "../marketplace";
 
-export type WorldIDProof = {
-  merkle_root: string;
-  nullifier_hash: string;
-  proof: string;
-  verification_level: string;
-};
+type Challenge = { app_id: `app_${string}`; action: string; signal: string; rp_context: RpContext };
 
 export default function PublishAgent() {
   const [formData, setFormData] = useState({
@@ -17,8 +15,9 @@ export default function PublishAgent() {
     capability: "web.research",
     description: "",
     basePrice: "120000",
-    endpoint: "https://my-agent.example.com/api",
-    merchantAccount: "0.0.11330954",
+    endpoint: "",
+    ensName: "",
+    merchantAccount: "",
     slaReliability: "98.5",
   });
 
@@ -29,50 +28,35 @@ export default function PublishAgent() {
   // World ID Verification States
   const [worldIdVerified, setWorldIdVerified] = useState(false);
   const [verifyingWorldId, setVerifyingWorldId] = useState(false);
-  const [worldIdProof, setWorldIdProof] = useState<WorldIDProof | null>(null);
+  const [worldIdProof, setWorldIdProof] = useState<IDKitResult | null>(null);
   const [verificationFeedback, setVerificationFeedback] = useState<string | null>(null);
 
-  // Mock / Live World ID Agent Pass Trigger
+  const [challenge, setChallenge] = useState<Challenge>();
+  const [widgetOpen, setWidgetOpen] = useState(false);
+  const [signature, setSignature] = useState("");
+  const listing = { name: formData.name, capability: formData.capability, description: formData.description,
+    basePrice: Number(formData.basePrice), merchant: formData.merchantAccount, endpoint: formData.endpoint, ensName: formData.ensName };
   async function triggerWorldIDVerification() {
     setVerifyingWorldId(true);
-    setVerificationFeedback(null);
     setError(null);
-
     try {
-      // In accordance with World ID Agent Pass guidelines for ETHGlobal Mumbai:
-      // Real-time server-side verification with mock proofs
-      const mockProof: WorldIDProof = {
-        merkle_root: "0x" + Math.random().toString(16).slice(2).padStart(64, "0"),
-        nullifier_hash: "0xnullifier_" + Date.now().toString(16) + "_" + Math.random().toString(16).slice(2, 10),
-        proof: "0xproof_" + Array.from({ length: 4 }, () => Math.random().toString(16).slice(2)).join(""),
-        verification_level: "orb",
-      };
-
-      const res = await fetch("http://localhost:3001/api/auth/world-id/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...mockProof,
-          action: "publish-autonomous-agent",
-          signal: formData.merchantAccount || "0.0.11330954",
-        }),
-      });
-
-      const data = await res.json() as Record<string, unknown>;
-      if (!res.ok) {
-        throw new Error(String(data.error || "World ID verification rejected by server."));
-      }
-
-      setWorldIdProof(mockProof);
-      setWorldIdVerified(true);
-      setVerificationFeedback("✓ Proof-of-Humanity confirmed via World ID Agent Pass. You are authorized to publish.");
-    } catch (err) {
-      setWorldIdVerified(false);
-      setVerificationFeedback(null);
-      setError(err instanceof Error ? err.message : "World ID verification failed");
-    } finally {
-      setVerifyingWorldId(false);
-    }
+      const response = await fetch("/api/marketplace/publish/challenge", { method: "POST", signal: AbortSignal.timeout(10000),
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify(listing) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Could not start verification");
+      const data: Challenge = result;
+      const wallet = (window as Window & { ethereum?: { request(args: { method: string; params?: string[] }): Promise<unknown> } }).ethereum;
+      if (!wallet) throw new Error("Connect the Ethereum wallet resolved by your ENS name.");
+      const accounts = await wallet.request({ method: "eth_requestAccounts" });
+      if (!Array.isArray(accounts) || typeof accounts[0] !== "string") throw new Error("No Ethereum wallet account connected");
+      const message = `AgentHire publishing authorization\nListing: ${data.signal}\nWorld ID nonce: ${data.rp_context.nonce}`;
+      const signed = await wallet.request({ method: "personal_sign", params: [stringToHex(message), accounts[0]] });
+      if (typeof signed !== "string") throw new Error("Wallet signature unavailable");
+      setSignature(signed);
+      setChallenge(data);
+      setWidgetOpen(true);
+    } catch (error) { setError(error instanceof Error ? error.message : "Publishing verification unavailable"); }
+    finally { setVerifyingWorldId(false); }
   }
 
   // Alternative Path: Cancel / Revoke World ID verification (Judges requirement)
@@ -99,16 +83,7 @@ export default function PublishAgent() {
       const res = await fetch("/api/marketplace/agents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          capability: formData.capability,
-          description: formData.description,
-          basePrice: Number(formData.basePrice),
-          merchant: formData.merchantAccount,
-          endpoint: formData.endpoint,
-          worldIdNullifier: worldIdProof.nullifier_hash,
-          worldIdVerified: true,
-        }),
+        body: JSON.stringify({ listing, proof: worldIdProof, signature }),
       });
 
       if (!res.ok) {
@@ -126,6 +101,14 @@ export default function PublishAgent() {
 
   return (
     <Marketplace>
+      {challenge && <IDKitRequestWidget open={widgetOpen} onOpenChange={setWidgetOpen}
+        app_id={challenge.app_id} action={challenge.action} rp_context={challenge.rp_context}
+        allow_legacy_proofs={false} preset={proofOfHuman({ signal: challenge.signal })}
+        onSuccess={proof => {
+          setWorldIdProof(proof);
+          setWorldIdVerified(true);
+          setVerificationFeedback("Proof ready. Publish to verify it on the server.");
+        }} onError={() => setError("World ID verification did not complete.")} />}
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Banner */}
         <div className="pb-4 border-b border-white/[0.07]">
@@ -159,7 +142,7 @@ export default function PublishAgent() {
               <span>🛡️ World ID Verified Creator</span>
             </div>
             <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-              Your agent <strong className="text-white font-mono">"{formData.name}"</strong> has been cryptographically validated and indexed into the Hedera Agent Registry.
+              Your agent <strong className="text-white font-mono">{formData.name}</strong> was added to the directory after World ID and ENS verification.
             </p>
             <div className="pt-4 flex items-center justify-center gap-3">
               <Link href="/agents" className="pill-action text-xs">
@@ -207,14 +190,14 @@ export default function PublishAgent() {
                   <div className="flex items-center gap-3">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-xs font-mono font-semibold">
                       <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                      World ID Verified (Proof-of-Humanity Active)
+                      World ID proof ready for server verification
                     </span>
                     <button
                       type="button"
                       onClick={handleCancelWorldID}
                       className="text-xs text-slate-500 hover:text-rose-400 underline font-mono cursor-pointer"
                     >
-                      Revoke / Simulate Cancelled Path
+                      Clear verification
                     </button>
                   </div>
                 ) : (
@@ -337,6 +320,13 @@ export default function PublishAgent() {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-slate-200 mb-1.5">ENS name</label>
+                <input required placeholder="your-agent.eth" value={formData.ensName}
+                  onChange={event => setFormData({ ...formData, ensName: event.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/[0.09] text-white text-xs font-mono" />
+                <p className="mt-1 text-xs text-slate-400">Set ENS text records agenthire.endpoint and agenthire.hedera to match your listing.</p>
+              </div>
+              <div>
                 <label className="block text-xs font-semibold text-slate-200 mb-1.5">
                   Agent Operational Description
                 </label>
@@ -353,7 +343,7 @@ export default function PublishAgent() {
 
             <div className="pt-2 flex items-center justify-between border-t border-white/[0.07]">
               <span className="text-[11px] text-slate-500 font-mono">
-                Persisted in Hedera registry database
+                Saved to the agent directory after verification
               </span>
               <button
                 type="submit"

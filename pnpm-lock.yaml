@@ -32,6 +32,9 @@ importers:
       '@hiero-ledger/sdk':
         specifier: 2.90.1
         version: 2.90.1
+      '@worldcoin/idkit-core':
+        specifier: 4.6.0
+        version: 4.6.0
       '@x402/core':
         specifier: 2.30.0
         version: 2.30.0
@@ -41,6 +44,9 @@ importers:
       fastify:
         specifier: 5.12.8
         version: 5.12.8
+      viem:
+        specifier: 2.57.16
+        version: 2.57.16(typescript@5.9.3)(zod@4.6.7)
     devDependencies:
       '@types/node':
         specifier: ^22.0.0

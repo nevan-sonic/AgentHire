@@ -1,3 +1,9 @@
+import { randomUUID } from "node:crypto";
+import { verifyMessage } from "viem";
+import { isRecord, integerIn } from "../agents/task.js";
+import { digest } from "./protocol.js";
+import { resolveAgentName } from "./ens.js";
+import { worldChallenge, verifyWorldProof } from "../routes/world-id.js";
 import { eventStreams } from "./sse.js";
 import { fileURLToPath } from "node:url";
 import type { FastifyInstance } from "fastify";
@@ -34,87 +40,66 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
 
   let windowStart = Date.now(), created = 0;
   app.get<{ Querystring: { capability?: string } }>("/api/marketplace/agents", async request => {
-    const all = await discover(store, merchant);
+    const all = await discover(store, env);
     if (!request.query.capability) return all;
     return all.filter(a => a.capability === request.query.capability);
   });
+  function listing(input: unknown) {
+    if (!isRecord(input) || Object.keys(input).length !== 7) throw new Error("Invalid agent listing");
+    const { name, description, capability, basePrice, endpoint, merchant, ensName } = input;
+    if (typeof name !== "string" || !name.trim() || name.length > 100 ||
+        typeof description !== "string" || description.trim().length < 20 || description.length > 1000 ||
+        typeof capability !== "string" || !["web.research", "code.generation", "data.analytics", "document.report", "document.summarize"].includes(capability) ||
+        !integerIn(basePrice, 1, 10_000_000) || typeof endpoint !== "string" || endpoint.length > 500 ||
+        typeof merchant !== "string" || !/^0\.0\.[1-9]\d{0,17}$/.test(merchant) ||
+        typeof ensName !== "string" || !ensName.trim() || ensName.length > 255) throw new Error("Complete the agent listing before verification");
+    const url = new URL(endpoint);
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) throw new Error("Provide an HTTPS execution endpoint");
+    return { name: name.trim(), description: description.trim(), capability, basePrice, endpoint: url.href, merchant, ensName: ensName.trim() };
+  }
+  let challengeWindow = Date.now(), challenges = 0;
+  app.post("/api/marketplace/publish/challenge", { bodyLimit: 4096 }, async (request, reply) => {
+    if (Date.now() - challengeWindow >= 60_000) { challengeWindow = Date.now(); challenges = 0; }
+    if (challenges >= 20) return reply.code(429).send({ error: "Publishing challenge limit reached" });
+    challenges++;
+    try {
+      const data = listing(request.body);
+      const challenge = worldChallenge(env, digest(data));
+      await resolveAgentName(env.ENS_RPC_URL, data.ensName, data.endpoint, data.merchant, env.ENS_NETWORK);
+      store.savePublishChallenge(challenge.rp_context.nonce, challenge.signal, challenge.rp_context.expires_at);
+      return reply.header("Cache-Control", "no-store").send(challenge);
+    } catch (error) { return reply.code(400).send({ error: error instanceof Error ? error.message : "Publishing unavailable" }); }
+  });
   app.post("/api/marketplace/agents", { bodyLimit: 16384 }, async (request, reply) => {
-    const body = request.body as Record<string, unknown>;
-    const name = String(body.name || "").trim();
-    const capability = String(body.capability || "").trim();
-    const description = String(body.description || "").trim();
-    const basePrice = Number(body.basePrice) || 120000;
-    const endpoint = String(body.endpoint || "").trim();
-    const agentMerchant = String(body.merchant || merchant || "0.0.11330954").trim();
-
-    if (!name || !capability || !description) {
-      return reply.code(400).send({ error: "Missing required agent fields: name, capability, description" });
+    const input = request.body;
+    if (!isRecord(input) || Object.keys(input).length !== 3 || !isRecord(input.proof) ||
+        typeof input.proof.nonce !== "string" || typeof input.signature !== "string" || !/^0x[a-f0-9]{130}$/i.test(input.signature)) {
+      return reply.code(400).send({ error: "World ID proof and ENS wallet signature required" });
     }
-
-    // Enforce capability scope constraint on published agents
-    const VALID_CAPABILITIES = [
-      "web.research",
-      "code.generation",
-      "data.analytics",
-      "document.report",
-      "document.summarize",
-    ];
-
-    if (!VALID_CAPABILITIES.includes(capability)) {
-      return reply.code(400).send({
-        error: `Invalid capability domain "${capability}". Published agents must conform to one of the marketplace standard capability scopes: ${VALID_CAPABILITIES.join(", ")}`,
-      });
-    }
-
-    if (description.length < 20) {
-      return reply.code(400).send({
-        error: "Agent operational description is too brief. Provide at least 20 characters explaining the agent's target use case, models, and SLA.",
-      });
-    }
-
-    // Verify description relevance to chosen capability
-    const capabilityKeywords: Record<string, RegExp> = {
-      "web.research": /research|search|investigate|evidence|web|topic|sources|facts/i,
-      "code.generation": /code|function|api|script|develop|software|typescript|python|rust|bug|test/i,
-      "data.analytics": /data|analys|stat|metric|excel|sheet|spreadsheet|numbers|math|tabular/i,
-      "document.report": /report|document|executive|findings|structured|write|synthesis/i,
-      "document.summarize": /summar|tldr|brief|paper|pdf|word|condense|abstract/i,
-    };
-
-    const matcher = capabilityKeywords[capability];
-    if (matcher && !matcher.test(description) && !matcher.test(name)) {
-      return reply.code(400).send({
-        error: `Agent description does not match selected capability "${capability}". The description must explain relevance to ${capability}.`,
-      });
-    }
-
-    const id = "custom-" + name.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString().slice(-4);
-    const agentData = {
-      id,
-      name,
-      description,
-      capability,
-      basePrice,
-      reliabilityBps: 9800,
-      health: "online",
-      merchant: agentMerchant,
-      endpoint: endpoint || "http://127.0.0.1:3101/execute",
-      network: "hedera:testnet",
-      asset: "0.0.0",
-      maxInput: 100,
-      designation: "third-party",
-      checkedAt: new Date().toISOString(),
-      registration: "registered",
-      verification: "Community Verified · x402 Merchant Enabled",
-    };
-
-    store.agent(id, agentData);
-    return reply.code(201).send(agentData);
+    try {
+      const data = listing(input.listing);
+      const nonce = input.proof.nonce;
+      const signal = digest(data);
+      if (!store.hasPublishChallenge(nonce, signal)) throw new Error("Publishing challenge expired or listing changed");
+      const resolved = await resolveAgentName(env.ENS_RPC_URL, data.ensName, data.endpoint, data.merchant, env.ENS_NETWORK);
+      const message = `AgentHire publishing authorization\nListing: ${signal}\nWorld ID nonce: ${nonce}`;
+      if (!await verifyMessage({ address: resolved.address, message, signature: input.signature as `0x${string}` })) {
+        throw new Error("ENS signature does not match the resolved address");
+      }
+      const nullifier = await verifyWorldProof(env, input.proof, nonce, signal);
+      const id = "custom-" + randomUUID();
+      const agent = { ...data, ensName: resolved.name, ensAddress: resolved.address, id, designation: "third-party",
+        health: "unavailable", network: "hedera:testnet", verification: "World ID publisher verified", checkedAt: new Date().toISOString() };
+      store.publishAgent(nonce, signal, digest(nullifier), id, agent);
+      return reply.code(201).send(agent);
+    } catch { return reply.code(422).send({ error: "Publishing rejected. Check the listing, ENS ownership, and World ID proof." }); }
   });
   app.get<{ Params: { agentId: string } }>("/api/marketplace/agents/:agentId", async (request, reply) => {
-    const agent = (await discover(store, merchant)).find(row => row.id === request.params.agentId);
+    const agent = (await discover(store, env)).find(row => row.id === request.params.agentId);
     return agent ?? reply.code(404).send({ error: "Agent not found" });
   });
+  app.get("/api/marketplace/receipts/jobs", async () => store.list().flatMap(job => job ? store.events(job.id)
+    .filter(event => event.kind === "payment.verified").map(event => ({ title: job.title, at: event.at, data: event.data })) : []));
   app.get("/api/marketplace/jobs", async () => store.list());
   app.post("/api/marketplace/jobs", { bodyLimit: 8192 }, async (request, reply) => {
     if (Date.now() - windowStart >= 60_000) { windowStart = Date.now(); created = 0; }

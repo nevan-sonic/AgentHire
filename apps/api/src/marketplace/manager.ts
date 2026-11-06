@@ -1,3 +1,4 @@
+import { resolveAgentName } from "./ens.js";
 import { randomUUID } from "node:crypto";
 import type { MarketplaceAgent, ProcurementBid } from "@agenthire/shared";
 import { assessBid } from "../agents/manager.js";
@@ -36,139 +37,102 @@ async function readWorker(seed: Seed, path: string, body?: object) {
   return JSON.parse(text) as unknown;
 }
 
-export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
+async function discoverStatistics(store: JobStore, merchant = DEMO_MERCHANT) {
+  return Promise.all(seeds.map(async seed => {
+    const checkedAt = new Date().toISOString();
+    let online = false;
+    try {
+      const [health, agent] = await Promise.all([readWorker(seed, "/health"), readWorker(seed, "/agent")]);
+      online = isRecord(health) && health.status === "ok" && health.workerId === seed.id &&
+        isRecord(agent) && agent.workerId === seed.id && agent.endpoint === origin(seed) + "/execute" &&
+        agent.merchant === merchant && agent.maxInput === seed.max && Array.isArray(agent.capabilities) &&
+        agent.capabilities.includes(STATISTICS);
+    } catch { /* Expose outages as unavailable. */ }
+    const worker: MarketplaceAgent = { id: seed.id, name: seed.name, description: seed.description, maxInput: seed.max, basePrice: seed.base,
+      reliabilityBps: seed.prior, health: online ? "online" : "unavailable", merchant, endpoint: origin(seed),
+      network: "hedera:testnet", asset: "0.0.0", capability: STATISTICS, designation: "first-party", checkedAt,
+      registration: "registered", verification: "Health check and independently evaluated capability observations", observations: store.observations(seed.id) };
+    store.agent(seed.id, worker);
+    return worker;
+  }));
+}
+
+export async function discover(store: JobStore, env: NodeJS.ProcessEnv = {}) {
+  const ensRpc = env.ENS_RPC_URL;
   const currentAgents: {
     id: string;
     name: string;
-    ensName?: string;
     description: string;
     capability: string;
-    basePrice: number;
-    reliabilityBps: number;
-    endpoint: string;
-    port: number;
   }[] = [
     {
       id: "researcher",
       name: "Research Agent",
-      ensName: "researcher.agenthire.eth",
       description: "Autonomous web search, evidence gathering, cross-referencing, and deep thinking on complex topics.",
       capability: "web.research",
-      basePrice: 120000,
-      reliabilityBps: 9200,
-      endpoint: "http://127.0.0.1:3111",
-      port: 3111,
     },
     {
       id: "coder",
       name: "Coding Agent",
-      ensName: "coder.agenthire.eth",
       description: "Generates robust functions, APIs, scripts, unit tests, and production software modules.",
       capability: "code.generation",
-      basePrice: 180000,
-      reliabilityBps: 9700,
-      endpoint: "http://127.0.0.1:3101",
-      port: 3101,
     },
     {
       id: "data-analyst",
       name: "Data Analyst Agent",
-      ensName: "analyst.agenthire.eth",
       description: "In-depth spreadsheet and numerical dataset analysis: statistics, volatility, trend forecasting, and tabular insights.",
       capability: "data.analytics",
-      basePrice: 150000,
-      reliabilityBps: 9600,
-      endpoint: "http://127.0.0.1:3102",
-      port: 3102,
     },
     {
       id: "report-writer",
       name: "Report Generation Agent",
-      ensName: "reporter.agenthire.eth",
       description: "Synthesizes multi-source data and findings into executive-grade structured Markdown reports with citations.",
       capability: "document.report",
-      basePrice: 110000,
-      reliabilityBps: 9400,
-      endpoint: "http://127.0.0.1:3103",
-      port: 3103,
     },
     {
       id: "doc-summarizer",
       name: "Document Summarizer Agent",
-      ensName: "summarizer.agenthire.eth",
       description: "Condenses lengthy PDF documents, Word files, research papers, and technical memos into concise executive briefs.",
       capability: "document.summarize",
-      basePrice: 95000,
-      reliabilityBps: 9500,
-      endpoint: "http://127.0.0.1:3112",
-      port: 3112,
     },
   ];
 
-  const workers: MarketplaceAgent[] = await Promise.all(
-    currentAgents.map(async (s) => {
-      const checkedAt = new Date().toISOString();
-      let online = false;
-      try {
-        const resp = await fetch(`${s.endpoint}/health`, { signal: AbortSignal.timeout(1500) });
-        online = resp.ok;
-      } catch {
-        online = true; // graceful fallback if worker health endpoint is spinning up
-      }
-      const worker: MarketplaceAgent = {
-        id: s.id,
-        name: s.name,
-        ensName: s.ensName,
-        description: s.description,
-        maxInput: 100,
-        basePrice: s.basePrice,
-        reliabilityBps: s.reliabilityBps,
-        health: online ? "online" : "unavailable",
-        merchant,
-        endpoint: `${s.endpoint}/execute`,
-        network: "hedera:testnet",
-        asset: "0.0.0",
-        capability: s.capability,
-        designation: "first-party",
-        checkedAt,
-        registration: "registered",
-        verification: "Cryptographic capability tests & HCS audit logging",
-        observations: store.observations(s.id),
-      };
-      return worker;
-    })
-  );
+  let online = false;
+  if (env.GROQ_GOALS_ENABLED === "true" && env.GROQ_API_KEY) {
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/models", {
+        redirect: "error", signal: AbortSignal.timeout(2500), headers: { Authorization: "Bearer " + env.GROQ_API_KEY },
+      });
+      if (response.ok) {
+        const body: unknown = await response.json();
+        const required = [env.GROQ_MANAGER_MODEL ?? "llama-3.1-8b-instant", env.GROQ_WORKER_MODEL ?? "llama-3.1-8b-instant"];
+        online = isRecord(body) && Array.isArray(body.data) &&
+          required.every(id => (body.data as unknown[]).some((model: unknown) => isRecord(model) && model.id === id));
+      } else await response.body?.cancel();
+    } catch { /* Provider status could not be verified. */ }
+  }
+  const workers = currentAgents.map(s => ({
+    id: s.id, name: s.name, description: s.description, capability: s.capability,
+    health: online ? "online" : "unavailable", designation: "first-party", network: "hedera:testnet",
+    verification: "Direct specialist invocation", checkedAt: new Date().toISOString(),
+  }));
 
   // Retrieve user-published custom agents from SQLite database
   const customRows = store.listCustomAgents();
-  const customAgents: MarketplaceAgent[] = customRows
-    .filter(row => !currentAgents.some(base => base.id === row.id))
-    .map(row => ({
-      id: String(row.id),
-      name: String(row.name || "Custom Agent"),
-      description: String(row.description || ""),
-      maxInput: Number(row.maxInput) || 100,
-      basePrice: Number(row.basePrice) || 100000,
-      reliabilityBps: Number(row.reliabilityBps) || 9500,
-      health: "online" as const,
-      merchant: String(row.merchant || merchant),
-      endpoint: String(row.endpoint || "http://127.0.0.1:3101/execute"),
-      network: "hedera:testnet" as const,
-      asset: "0.0.0" as const,
-      capability: String(row.capability || "web.research"),
-      designation: "third-party" as const,
-      checkedAt: new Date().toISOString(),
-      registration: "registered" as const,
-      verification: "Community Verified · x402 Merchant Enabled",
-      observations: store.observations(String(row.id)),
-    }));
-
+  const customAgents: MarketplaceAgent[] = await Promise.all(customRows.map(async row => {
+    let ensName: string | undefined;
+    try {
+      const result = await resolveAgentName(ensRpc, String(row.ensName), String(row.endpoint), String(row.merchant), env.ENS_NETWORK);
+      if (result.address === row.ensAddress) ensName = result.name;
+    } catch { /* No verified ENS badge. */ }
+    return { ...(row as unknown as MarketplaceAgent), ensName, health: "unavailable" };
+  }));
   return [...workers, ...customAgents];
 }
 
 export async function collectBids(store: JobStore, job: Job, merchant = DEMO_MERCHANT) {
   store.event(job.id, "discovery.started");
-  const workers = await discover(store, merchant);
+  const workers = await discoverStatistics(store, merchant);
   const candidates: { bid: ProcurementBid; adapter: WorkerAdapter }[] = [];
   await Promise.all(workers.map(async (worker, index) => {
     const seed = seeds[index];

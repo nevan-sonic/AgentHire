@@ -26,9 +26,11 @@
     "@agenthire/shared": "workspace:*",
     "@fastify/cors": "11.4.1",
     "@hiero-ledger/sdk": "2.90.1",
+    "@worldcoin/idkit-core": "4.6.0",
     "@x402/core": "2.30.0",
     "@x402/hedera": "2.30.0",
-    "fastify": "5.12.8"
+    "fastify": "5.12.8",
+    "viem": "2.57.16"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
