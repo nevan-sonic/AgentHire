@@ -85,7 +85,7 @@ export async function runLive(store: JobStore, job: Job, auth: Scope, env: NodeJ
     const { config, key, payerBalance, operatorBalance, topicHead } = await dependencies.inspectLiveInfrastructure(job.id, auth.payer, env);
     const mirror = config.mirrorNodeUrl;
     if (BigInt(payerBalance) < BigInt(auth.maxTotal) || BigInt(operatorBalance) < BigInt(auth.maxAuditFee) || expired()) throw new Error();
-    const candidates = await dependencies.collectBids(store, job, auth.merchant);
+    const candidates = await dependencies.collectBids(store, job, auth.merchant, env);
     const plan = await decide(job, candidates);
     const approvedPlan = store.events(job.id).filter(event => event.kind === "authorization.required").at(-1)?.data;
     if (approvedPlan?.planHash !== planBinding(candidates, plan)) throw new Error("Reviewed plan changed");

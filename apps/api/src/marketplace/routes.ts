@@ -34,7 +34,7 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
       { reason: "Check recorded transactions before taking further action" });
     else {
       if (job.status === "discovering") store.transition(job.id, "discovering", "queued", "job.planning_restarted");
-      schedule(planJob(store, job, merchant));
+      schedule(planJob(store, job, merchant, env));
     }
   }
 
@@ -108,7 +108,7 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
       const job = parseJob(request.body);
       store.create(job);
       created++;
-      schedule(planJob(store, job, merchant));
+      schedule(planJob(store, job, merchant, env));
       return reply.code(201).send(job);
     } catch { return reply.code(400).send({ error: "Invalid job title, dataset, spending limits, or mode" }); }
   });

@@ -1,3 +1,4 @@
+import { readBounded } from "../goals/tools.js";
 import { resolveAgentName } from "./ens.js";
 import { randomUUID } from "node:crypto";
 import type { MarketplaceAgent, ProcurementBid } from "@agenthire/shared";
@@ -28,13 +29,11 @@ export function parseJob(body: unknown): Job {
     status: "queued", createdAt: new Date().toISOString() };
 }
 
-async function readWorker(seed: Seed, path: string, body?: object) {
-  const response = await fetch(origin(seed) + path, { redirect: "error", signal: AbortSignal.timeout(2500),
+async function readWorker(workerOrigin: string, path: string, body?: object) {
+  const response = await fetch(workerOrigin + path, { redirect: "error", signal: AbortSignal.timeout(2500),
     ...(body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}) });
   if (!response.ok) { await response.body?.cancel(); throw new Error("worker_rejected_request"); }
-  const text = await response.text();
-  if (text.length > 8192) throw new Error("oversized_worker_response");
-  return JSON.parse(text) as unknown;
+  return readBounded(response, 8192);
 }
 
 async function discoverStatistics(store: JobStore, merchant = DEMO_MERCHANT) {
@@ -42,7 +41,7 @@ async function discoverStatistics(store: JobStore, merchant = DEMO_MERCHANT) {
     const checkedAt = new Date().toISOString();
     let online = false;
     try {
-      const [health, agent] = await Promise.all([readWorker(seed, "/health"), readWorker(seed, "/agent")]);
+      const [health, agent] = await Promise.all([readWorker(origin(seed), "/health"), readWorker(origin(seed), "/agent")]);
       online = isRecord(health) && health.status === "ok" && health.workerId === seed.id &&
         isRecord(agent) && agent.workerId === seed.id && agent.endpoint === origin(seed) + "/execute" &&
         agent.merchant === merchant && agent.maxInput === seed.max && Array.isArray(agent.capabilities) &&
@@ -130,19 +129,18 @@ export async function discover(store: JobStore, env: NodeJS.ProcessEnv = {}) {
   return [...workers, ...customAgents];
 }
 
-export async function collectBids(store: JobStore, job: Job, merchant = DEMO_MERCHANT) {
+export async function collectBids(store: JobStore, job: Job, merchant = DEMO_MERCHANT, env: NodeJS.ProcessEnv = {}) {
   store.event(job.id, "discovery.started");
   const workers = await discoverStatistics(store, merchant);
   const candidates: { bid: ProcurementBid; adapter: WorkerAdapter }[] = [];
-  await Promise.all(workers.map(async (worker, index) => {
-    const seed = seeds[index];
+  async function collect(worker: MarketplaceAgent, seed: Seed, workerOrigin: string) {
     if (worker.health !== "online") return store.event(job.id, "worker.unavailable", { workerId: worker.id });
     store.event(job.id, "worker.discovered", worker);
     let reason = "worker_unavailable_or_invalid_bid";
     try {
       if (job.task.input.length > seed.max) { reason = "unsupported_input_length"; throw new Error(); }
-      const offered = validateOffer(await readWorker(seed, "/bid", job.task), seed, job.task, merchant);
-      const workerProfile = profile(seed, merchant);
+      const offered = validateOffer(await readWorker(workerOrigin, "/bid", job.task), seed, job.task, merchant, Date.now(), workerOrigin);
+      const workerProfile = profile(seed, merchant, workerOrigin);
       const checked = assessBid(offered.bid, job.task, workerProfile, Date.now(), job.task.deadlineMs);
       if (checked.status !== "eligible") { reason = checked.reason; throw new Error(); }
       const adapter: WorkerAdapter = { profile: workerProfile, async bid() { return offered.bid; } };
@@ -152,7 +150,35 @@ export async function collectBids(store: JobStore, job: Job, merchant = DEMO_MER
       candidates.push({ bid: checked.bid, adapter });
       store.event(job.id, "bid.received", offered);
     } catch { store.event(job.id, "bid.rejected", { workerId: worker.id, reason }); }
-  }));
+  }
+
+  // Only operator-approved origins can receive task data.
+  const approvedOrigin = env.MARKETPLACE_EXTERNAL_WORKER_ORIGIN;
+  const listing = approvedOrigin && store.listCustomAgents().find(row =>
+    row.endpoint === approvedOrigin + "/execute" && row.merchant === merchant &&
+    (row.capability === STATISTICS || row.capability === "data.analytics"));
+  if (listing && approvedOrigin) {
+    try {
+      const url = new URL(approvedOrigin);
+      if (url.protocol !== "https:" || url.origin !== approvedOrigin) throw new Error("Invalid worker origin");
+      const identity = await resolveAgentName(env.ENS_RPC_URL, String(listing.ensName),
+        String(listing.endpoint), merchant, env.ENS_NETWORK);
+      if (identity.address !== listing.ensAddress) throw new Error("ENS owner mismatch");
+      const [agent, health] = await Promise.all([readWorker(approvedOrigin, "/agent"), readWorker(approvedOrigin, "/health")]);
+      const seed = isRecord(agent) && seeds.find(entry => entry.id === agent.workerId);
+      if (!seed || !isRecord(agent) || agent.endpoint !== listing.endpoint || agent.merchant !== merchant ||
+          agent.maxInput !== seed.max || listing.basePrice !== seed.base ||
+          !Array.isArray(agent.capabilities) || !agent.capabilities.includes(STATISTICS) ||
+          !isRecord(health) || health.status !== "ok" || health.workerId !== seed.id) throw new Error("Worker identity mismatch");
+      await collect({ ...workers[seeds.indexOf(seed)], health: "online", endpoint: approvedOrigin,
+        ensName: identity.name }, seed, approvedOrigin);
+    } catch {
+      store.event(job.id, "bid.rejected", { workerId: listing.id, reason: "external_worker_verification_failed" });
+    }
+  }
+  const externalWorkerId = candidates[0]?.bid.workerId;
+  await Promise.all(workers.map((worker, index) =>
+    worker.id === externalWorkerId ? undefined : collect(worker, seeds[index], origin(seeds[index]))));
   candidates.sort((a, b) => a.bid.workerId.localeCompare(b.bid.workerId));
   store.event(job.id, "bidding.completed", { count: candidates.length });
   return candidates;
@@ -175,10 +201,10 @@ export function planBinding(candidates: Candidates, plan: Awaited<ReturnType<typ
   });
 }
 
-export async function planJob(store: JobStore, job: Job, merchant?: string) {
+export async function planJob(store: JobStore, job: Job, merchant?: string, env: NodeJS.ProcessEnv = {}) {
   if (!store.transition(job.id, "queued", "discovering", "job.planning")) return;
   try {
-    const candidates = await collectBids(store, job, merchant);
+    const candidates = await collectBids(store, job, merchant, env);
     const plan = await decide(job, candidates);
     store.event(job.id, "pocp.evaluated", plan.trace);
     if (plan.chosenTest) store.event(job.id, "capability_test.planned", plan.chosenTest);

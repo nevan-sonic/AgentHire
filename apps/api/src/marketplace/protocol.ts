@@ -37,8 +37,8 @@ export function offer(seed: Seed, task: ProcurementTask, merchant: string, now =
   return { bid, inputDigest, testPrice, testEndpoint: workerOrigin + "/capability-test", maxInput: seed.max };
 }
 
-export function validateOffer(value: unknown, seed: Seed, task: ProcurementTask, merchant: string, now = Date.now()): MarketplaceOffer {
-  const expected = offer(seed, task, merchant, now);
+export function validateOffer(value: unknown, seed: Seed, task: ProcurementTask, merchant: string, now = Date.now(), workerOrigin = origin(seed)): MarketplaceOffer {
+  const expected = offer(seed, task, merchant, now, workerOrigin);
   if (!value || typeof value !== "object" || Object.keys(value).length !== 5 || !("bid" in value) ||
       !value.bid || typeof value.bid !== "object") throw new Error("malformed_bid");
   const bid = value.bid as ProcurementBid;

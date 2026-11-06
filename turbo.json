@@ -40,7 +40,8 @@
         "WLD_RP_SIGNING_KEY",
         "WLD_PUBLISH_ACTION",
         "ENS_NETWORK",
-        "ENS_RPC_URL"
+        "ENS_RPC_URL",
+        "MARKETPLACE_EXTERNAL_WORKER_ORIGIN"
       ]
     },
     "build": {
