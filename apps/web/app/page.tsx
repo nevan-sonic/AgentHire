@@ -56,11 +56,13 @@ const stageColors: Record<AgentLogEntry["stage"], { bg: string; text: string; bo
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
+  const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AgentLogEntry[]>([]);
   const [result, setResult] = useState<FinalResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const presets = [
     { label: "🔬 Research & Deep Thinking", prompt: "Investigate Hedera Consensus Service (HCS) and conduct deep thinking on how tamper-evident audit logs secure autonomous agent workflows" },
@@ -77,6 +79,29 @@ export default function Home() {
     }
   }, [logs]);
 
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      setAttachedFile({
+        name: file.name,
+        content: text || "",
+      });
+      // Contextual prompt prefill if empty
+      if (!prompt.trim()) {
+        if (/\.(csv|tsv|xlsx|xls)$/i.test(file.name)) {
+          setPrompt(`Analyze the attached spreadsheet ${file.name}, compute key metrics, and identify anomalies.`);
+        } else {
+          setPrompt(`Summarize the attached document ${file.name} and provide executive takeaways.`);
+        }
+      }
+    };
+    reader.readAsText(file);
+  }
+
   function startStreamingTask(e: React.FormEvent) {
     e.preventDefault();
     if (!prompt.trim() || loading) return;
@@ -87,7 +112,10 @@ export default function Home() {
     setError(null);
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    const url = `${apiUrl}/api/orchestrator/stream?prompt=${encodeURIComponent(prompt.trim())}`;
+    let url = `${apiUrl}/api/orchestrator/stream?prompt=${encodeURIComponent(prompt.trim())}`;
+    if (attachedFile) {
+      url += `&fileName=${encodeURIComponent(attachedFile.name)}&fileContent=${encodeURIComponent(attachedFile.content.slice(0, 4000))}`;
+    }
     const eventSource = new EventSource(url);
 
     eventSource.addEventListener("log", (e: MessageEvent) => {
@@ -150,17 +178,57 @@ export default function Home() {
 
         {/* Input Form */}
         <form onSubmit={startStreamingTask} className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
-          <label className="block text-sm font-medium text-slate-200">
-            Task Prompt
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. Analyze latency data [24, 56, 120, 310, 45, 29, 680, 52] ms and recommend infrastructure optimizations..."
-              rows={3}
-              className="w-full mt-2 px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-700/80 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 text-sm transition"
-              required
-            />
-          </label>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-200">
+              Task Prompt
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="e.g. Analyze latency data [24, 56, 120, 310, 45, 29, 680, 52] ms and recommend infrastructure optimizations..."
+                rows={3}
+                className="w-full mt-2 px-3.5 py-2.5 rounded-lg bg-slate-950 border border-slate-700/80 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 text-sm transition"
+                required
+              />
+            </label>
+
+            {/* File Attachment Pill / Upload Section */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept=".csv,.xlsx,.xls,.tsv,.pdf,.docx,.doc,.txt,.json,.md"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium transition cursor-pointer"
+                >
+                  <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <span>Attach Document or Spreadsheet</span>
+                </button>
+
+                {attachedFile && (
+                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-950/70 border border-emerald-800 text-emerald-300 font-mono">
+                    <span className="truncate max-w-[200px]">{attachedFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachedFile(null)}
+                      className="text-slate-400 hover:text-slate-100 font-bold ml-1 cursor-pointer"
+                      title="Remove file"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+              <span className="text-slate-500 font-mono text-[11px]">Supported: .csv, .xlsx, .pdf, .docx, .txt</span>
+            </div>
+          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <div className="flex flex-wrap items-center gap-2">

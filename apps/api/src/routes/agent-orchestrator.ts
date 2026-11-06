@@ -87,8 +87,10 @@ async function executeOnChainSettlement(
 
 export function registerAgentOrchestrator(app: FastifyInstance, env: NodeJS.ProcessEnv) {
   // Live Streaming SSE Endpoint for Agent Activity Logs & Real-Time Thinking
-  app.get<{ Querystring: { prompt: string } }>("/api/orchestrator/stream", async (request, reply) => {
+  app.get<{ Querystring: { prompt: string; fileName?: string; fileContent?: string } }>("/api/orchestrator/stream", async (request, reply) => {
     const prompt = request.query.prompt?.trim();
+    const fileName = request.query.fileName?.trim();
+    const fileContent = request.query.fileContent?.trim();
     if (!prompt) {
       return reply.code(400).send({ error: "Please provide a task prompt" });
     }
@@ -122,10 +124,18 @@ export function registerAgentOrchestrator(app: FastifyInstance, env: NodeJS.Proc
 
     try {
       // 1. Initial Intake & Internal Reasoning by Top-Level Orchestrator Agent
+      if (fileName) {
+        emitLog(
+          "Orchestrator Agent (Master)",
+          "THINKING",
+          `User attached document/spreadsheet: "${fileName}" (${fileContent ? fileContent.length : 0} characters). Parsing content into context stream...`
+        );
+      }
+
       emitLog(
         "Orchestrator Agent (Master)",
         "THINKING",
-        `Analyzing user prompt: "${prompt}". Evaluating task domain, technical intent, and selecting the optimal specialist agent from the hierarchy...`
+        `Analyzing user prompt: "${prompt}"${fileName ? ` with attached file '${fileName}'` : ""}. Evaluating task domain, technical intent, and selecting the optimal specialist agent from the hierarchy...`
       );
 
       let specialistKey: keyof typeof SPECIALIST_AGENTS = "RESEARCH";
@@ -137,15 +147,22 @@ export function registerAgentOrchestrator(app: FastifyInstance, env: NodeJS.Proc
           emitLog("Orchestrator Agent (Master)", "THINKING", `Allocated reasoning tokens on Groq LLM layer`, usage as Record<string, unknown>);
         });
 
+        const effectivePrompt = fileName && fileContent
+          ? `${prompt}\n\n[Attached File: ${fileName}]\n${fileContent.slice(0, 4000)}`
+          : prompt;
+
         const decision = (await groq.json(
           "MANAGER",
           `You are the Master Orchestrator AI Agent at the top of an autonomous agent hierarchy.
-Analyze the user prompt and decide which specialist agent to subcontract:
+Analyze the user prompt and any attached file to decide which specialist agent to subcontract:
 1. "RESEARCH" - web search, deep thinking, investigating a topic, finding protocols or repos.
 2. "CODING" - writing code, creating a function, building an API, debugging, scripts.
-3. "DATA_ANALYST" - spreadsheet/excel data analysis, numbers, statistics, metrics.
+3. "DATA_ANALYST" - spreadsheet/excel data analysis, tabular numbers, statistics, metrics, csv files.
 4. "REPORT_WRITER" - generating a detailed comprehensive report with recommendations.
-5. "DOC_SUMMARIZER" - summarizing documents, text, pdfs, articles, or papers.
+5. "DOC_SUMMARIZER" - summarizing documents, text, pdfs, articles, papers, or word documents.
+
+Note: If an attached file is a spreadsheet (.csv, .xlsx, .xls) or tabular data, choose "DATA_ANALYST".
+If an attached file is a document (.pdf, .docx, .doc, .txt, .md), choose "DOC_SUMMARIZER".
 
 Return JSON:
 {
@@ -155,7 +172,7 @@ Return JSON:
   "language": "language/framework if coding",
   "extractedNumbers": [number, number, ...] if data analysis
 }`,
-          { prompt }
+          { prompt: effectivePrompt, fileName }
         )) as {
           selectedAgent?: keyof typeof SPECIALIST_AGENTS;
           reasoning?: string;
@@ -369,7 +386,8 @@ Return JSON:
         specialistDeliverable = `### Code Implementation (${res.language || "TypeScript"})\n\n${res.explanation || ""}\n\n\`\`\`${(res.language || "typescript").toLowerCase()}\n${res.code || "// Implementation\n"}\n\`\`\`\n\n#### Usage Example:\n\`\`\`${(res.language || "typescript").toLowerCase()}\n${res.usageExample || ""}\n\`\`\``;
 
       } else if (specialistKey === "DATA_ANALYST") {
-        const matches = prompt.match(/-?\d+(\.\d+)?/g);
+        const textToAnalyze = fileContent ? `${prompt}\n${fileContent}` : prompt;
+        const matches = textToAnalyze.match(/-?\d+(\.\d+)?/g);
         const numbers = matches && matches.length >= 2 ? matches.map(Number) : [42, 68, 124, 89, 210, 156, 312, 178];
         const count = numbers.length;
         const min = Math.min(...numbers);
@@ -392,10 +410,10 @@ Return JSON:
   "anomaliesDetected": "anomalies or outliers if any",
   "dataRecommendations": "strategic analytical recommendation"
 }`,
-          { prompt, numbers, stats: computationData }
+          { prompt, fileName, sampleData: fileContent ? fileContent.slice(0, 2000) : undefined, numbers: numbers.slice(0, 50), stats: computationData }
         )) as { executiveSummary?: string; dataTrends?: string[]; anomaliesDetected?: string; dataRecommendations?: string };
 
-        specialistDeliverable = `### Quantitative Data & Spreadsheet Analytics\n\n${res.executiveSummary || ""}\n\n` +
+        specialistDeliverable = `### Quantitative Data & Spreadsheet Analytics${fileName ? ` (${fileName})` : ""}\n\n${res.executiveSummary || ""}\n\n` +
           `| Metric | Value |\n| :--- | :--- |\n| Data Points Analyzed | **${count}** |\n| Minimum | **${min}** |\n| Maximum | **${max}** |\n| Mean (Average) | **${mean.toFixed(2)}** |\n| Median | **${median}** |\n\n` +
           `#### Key Trends & Outliers:\n` +
           (res.dataTrends ? res.dataTrends.map((t) => `- ${t}`).join("\n") : "") +
@@ -415,7 +433,7 @@ Return JSON:
   ],
   "recommendations": ["rec 1", "rec 2"]
 }`,
-          { prompt }
+          { prompt, fileContext: fileContent ? fileContent.slice(0, 2000) : undefined }
         )) as { reportTitle?: string; executiveOverview?: string; sections?: Array<{ heading: string; content: string }>; recommendations?: string[] };
 
         specialistDeliverable = `# ${res.reportTitle || "Formal Executive Report"}\n\n**Executive Overview:**\n${res.executiveOverview || ""}\n\n` +
@@ -425,6 +443,7 @@ Return JSON:
 
       } else {
         // DOC_SUMMARIZER
+        const documentText = fileContent ? fileContent.slice(0, 3500) : prompt;
         const res = (await groq.json(
           "WORKER",
           `You are the Document Summarizer Agent. Condense the document or text topic from the user prompt into a structured executive summary.
@@ -435,10 +454,10 @@ Return JSON:
   "coreTakeaways": ["takeaway 1", "takeaway 2", "takeaway 3"],
   "actionItems": ["action item 1", "action item 2"]
 }`,
-          { prompt }
+          { prompt, fileName, documentText }
         )) as { documentTitle?: string; executiveBrief?: string; coreTakeaways?: string[]; actionItems?: string[] };
 
-        specialistDeliverable = `## Summary: ${res.documentTitle || "Executive Document Brief"}\n\n**Executive Brief:**\n${res.executiveBrief || ""}\n\n### Core Takeaways:\n` +
+        specialistDeliverable = `## Summary: ${fileName ? `${fileName} — ` : ""}${res.documentTitle || "Executive Document Brief"}\n\n**Executive Brief:**\n${res.executiveBrief || ""}\n\n### Core Takeaways:\n` +
           (res.coreTakeaways ? res.coreTakeaways.map((t) => `- ${t}`).join("\n") : "") +
           `\n\n### Actionable Next Steps:\n` +
           (res.actionItems ? res.actionItems.map((a) => `1. ${a}`).join("\n") : "");
