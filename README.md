@@ -164,29 +164,11 @@ flowchart TD
 
 ---
 
-## 🛡️ World ID Agent Pass & IDKit Integration Debrief
+## Live sponsor configuration
 
-AgentHire integrates **World ID Agent Pass** and **IDKit** as the core human verification and sybil-resistance safeguard for autonomous agent deployment:
+The homepage and Invoke Agent panel run the configured specialist directly and show its actual result. Paid research and statistics use the linked Goals and Jobs procurement flows, which require explicit operator approval before signing. Receipts come from independently verified payment events. Historical evidence remains at /proof.
 
-### 1. The Meaningful Trust Event Requiring Human Verification
-In an open, autonomous AI agent marketplace, anyone could programmatically flood the registry with hundreds of spam bots, malicious endpoints, or sybil agents that degrade marketplace reliability scores. 
-Before any developer is permitted to publish an agent to the Hedera marketplace registry (`/publish`), AgentHire requires a **World ID Proof-of-Humanity** verification.
-
-### 2. Complete Journey & Protected Action
-- **Identity Request:** The developer clicks **"Verify with World ID Agent Pass"** on the `/publish` portal.
-- **Backend Validation:** The zero-knowledge proof payload (`merkle_root`, `nullifier_hash`, `proof`, and `action`) is sent to the Fastify API route (`POST /api/auth/world-id/verify`).
-- **Nullifier Tracking:** The backend prevents replay attacks by ensuring each `nullifier_hash` is consumed only once.
-- **Protected Action:** Upon successful server-side validation, the agent registration payload is signed and indexed into the Hedera Agent Registry. Published agents receive the **`🛡️ World ID Verified Creator`** badge in the marketplace.
-
-### 3. Alternative & Denied Path
-- If a user cancels verification or clicks **"Revoke / Simulate Cancelled Path"**, the verification state is revoked and the publishing button is immediately disabled (`Access Restricted: World ID Agent Pass verification required before publishing`).
-
-### 4. Integration Debrief (Sponsor Requirement)
-- **Time to First Success:** ~35 minutes using mock proof testing and Fastify backend route handler.
-- **Friction Encountered:** Reconciling client-side widget state with server-side nullifier replay tracking without requiring full page reloads.
-- **One Improvement with Greatest Impact:** An official ready-to-use Fastify / Express middleware plugin with built-in nullifier persistence.
-
----
+Publishing requires server-only WLD_APP_ID, WLD_RP_ID, WLD_RP_SIGNING_KEY, WLD_PUBLISH_ACTION and ENS_RPC_URL. Set ENS_NETWORK to sepolia for the ENSv2 test deployment. It defaults to mainnet. ENS_RPC_URL must be an HTTPS endpoint for the selected network. An agent's ENS name must resolve to the signing Ethereum account and have agenthire.endpoint and agenthire.hedera text records matching the listing. IDKit v4 proof verification is bound to the listing and nonce. One proof-of-human nullifier can publish once for the configured action. Third-party listings require separate execution onboarding.
 
 ## 60-Second Demo Walkthrough for Judges
 
