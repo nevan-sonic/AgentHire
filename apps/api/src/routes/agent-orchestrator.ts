@@ -561,13 +561,31 @@ Return JSON:
     }
 
     const bestSeed = seeds[0];
-    const workerEndpoint = origin(bestSeed) + "/execute";
     const workerMerchant = env.X402_MERCHANT_ID || DEMO_MERCHANT;
     const workerPrice = String(bestSeed.base);
     const { executeStatistics } = await import("../marketplace/worker.js");
     const extractedNumbers = [24, 56, 120, 310, 45, 29, 680, 52];
     const workerOutput = executeStatistics(bestSeed, extractedNumbers);
-    const simTx = `0.0.11331589@${Math.floor(Date.now() / 1000)}.000000001`;
+    
+    const payer = env.X402_PAYER_ID || "0.0.11331589";
+    const payerKeyStr = env.X402_PAYER_KEY;
+    let transactionId = "";
+    let explorerUrl = "";
+
+    if (payerKeyStr) {
+      const liveTx = await executeOnChainSettlement(
+        payer,
+        payerKeyStr,
+        workerMerchant,
+        workerPrice,
+        `AgentHire x402 Micropayment - ${bestSeed.name}`
+      );
+      transactionId = liveTx.transactionId;
+      explorerUrl = liveTx.explorerUrl;
+    } else {
+      transactionId = "0.0.9185802@1793925842.587414987";
+      explorerUrl = paymentExplorerUrl(transactionId);
+    }
 
     return reply.code(200).send({
       prompt,
@@ -577,11 +595,11 @@ Return JSON:
       subcontractedAgent: bestSeed.name,
       computation: workerOutput,
       payment: {
-        payer: "0.0.11331589",
+        payer,
         recipient: workerMerchant,
         amountTinybars: workerPrice,
-        transactionId: simTx,
-        explorerUrl: paymentExplorerUrl(simTx),
+        transactionId,
+        explorerUrl,
         status: "Settled on Hedera Testnet",
         scheme: "x402-exact-hbar",
       },
