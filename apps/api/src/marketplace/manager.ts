@@ -37,7 +37,7 @@ async function readWorker(seed: Seed, path: string, body?: object) {
 }
 
 export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
-  return Promise.all(seeds.map(async seed => {
+  const statWorkers: MarketplaceAgent[] = await Promise.all(seeds.map(async seed => {
     const checkedAt = new Date().toISOString();
     let online = false;
     try {
@@ -54,6 +54,33 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
     store.agent(seed.id, worker);
     return worker;
   }));
+
+  // Research and auxiliary workers
+  const researchSeeds = [
+    { id: "quick-research", name: "Quick Researcher", port: 3111, base: 90000, prior: 6500, capability: "web.research", description: "Lower latency web retrieval and source collection." },
+    { id: "deep-research", name: "Deep Researcher", port: 3112, base: 140000, prior: 9000, capability: "web.research", description: "Broader multi-source retrieval, cross-checking and comparison." },
+  ];
+
+  const resWorkers: MarketplaceAgent[] = await Promise.all(researchSeeds.map(async s => {
+    const checkedAt = new Date().toISOString();
+    let online = false;
+    try {
+      const resp = await fetch(`http://127.0.0.1:${s.port}/health`, { signal: AbortSignal.timeout(1500) });
+      online = resp.ok;
+    } catch {}
+    const worker: MarketplaceAgent = {
+      id: s.id, name: s.name, description: s.description, maxInput: 50, basePrice: s.base,
+      reliabilityBps: s.prior, health: online ? "online" : "unavailable", merchant,
+      endpoint: `http://127.0.0.1:${s.port}`, network: "hedera:testnet", asset: "0.0.0",
+      capability: s.capability, designation: "first-party", checkedAt, registration: "registered",
+      verification: "Cryptographic capability tests & HCS audit logging",
+      observations: store.observations(s.id)
+    };
+    store.agent(s.id, worker);
+    return worker;
+  }));
+
+  return [...statWorkers, ...resWorkers];
 }
 
 export async function collectBids(store: JobStore, job: Job, merchant = DEMO_MERCHANT) {

@@ -11,7 +11,7 @@ export function AgentList({ id }: { id?: string }) {
   useEffect(() => {
     const controller = new AbortController();
     const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]);
-    const path = id ? "/" + encodeURIComponent(id) : "?capability=statistics.summary";
+    const path = id ? "/" + encodeURIComponent(id) : "";
     fetch("/api/marketplace/agents" + path, { signal }).then(async response => {
       if (!response.ok) throw new Error(response.status === 404 ? "Agent not found." : "Worker registry unavailable.");
       const data = await response.json();

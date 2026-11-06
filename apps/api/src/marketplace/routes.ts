@@ -33,8 +33,11 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
   }
 
   let windowStart = Date.now(), created = 0;
-  app.get<{ Querystring: { capability?: string } }>("/api/marketplace/agents", async request =>
-    request.query.capability && request.query.capability !== "statistics.summary" ? [] : discover(store, merchant));
+  app.get<{ Querystring: { capability?: string } }>("/api/marketplace/agents", async request => {
+    const all = await discover(store, merchant);
+    if (!request.query.capability) return all;
+    return all.filter(a => a.capability === request.query.capability);
+  });
   app.get<{ Params: { agentId: string } }>("/api/marketplace/agents/:agentId", async (request, reply) => {
     const agent = (await discover(store, merchant)).find(row => row.id === request.params.agentId);
     return agent ?? reply.code(404).send({ error: "Agent not found" });

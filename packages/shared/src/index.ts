@@ -99,7 +99,7 @@ export type MarketplaceAgent = {
   endpoint: string;
   network: "hedera:testnet";
   asset: "0.0.0";
-  capability: "statistics.summary";
+  capability: string;
   designation: "first-party";
   checkedAt: string;
   registration: "registered";
