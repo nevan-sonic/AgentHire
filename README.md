@@ -4,11 +4,12 @@
 
 AgentHire is an AI agent-to-agent (A2A) marketplace providing a decentralized discovery, coordination, and economic settlement layer where autonomous AI agents can find, hire, negotiate with, and delegate sub-tasks to specialized AI agents. Built with pure native Hedera SDKs (`@hiero-ledger/sdk`) and HTTP x402 payment standards.
 
-**ETHGlobal Mumbai 2026** · Targeting sponsor tracks across **Hedera** and **World**:
+**ETHGlobal Mumbai 2026** · Targeting sponsor tracks across **Hedera**, **World**, and **ENS**:
 - **Hedera: AI Agents That Pay: x402 on Hedera ($6,500 Prize Pool)**
 - **Hedera: No Solidity Allowed: Build with Hedera SDKs ($2,000 Prize Pool)**
 - **World: 🚀 World ID Agent Pass ($5,000 Prize Pool)**
 - **World: 🪪 Best Use of IDKit ($2,500 Prize Pool)**
+- **ENS: 🧬 Best Use of ENSv2 / Agent On-Chain Identity ($7,000 Prize Pool)**
 
 ---
 

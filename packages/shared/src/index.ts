@@ -101,6 +101,7 @@ export type MarketplaceAgent = {
   asset: "0.0.0";
   capability: string;
   designation: "first-party" | "third-party";
+  ensName?: string;
   checkedAt: string;
   registration: "registered";
   verification: string;

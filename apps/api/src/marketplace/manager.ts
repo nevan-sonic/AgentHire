@@ -40,6 +40,7 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
   const currentAgents: {
     id: string;
     name: string;
+    ensName?: string;
     description: string;
     capability: string;
     basePrice: number;
@@ -50,6 +51,7 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
     {
       id: "researcher",
       name: "Research Agent",
+      ensName: "researcher.agenthire.eth",
       description: "Autonomous web search, evidence gathering, cross-referencing, and deep thinking on complex topics.",
       capability: "web.research",
       basePrice: 120000,
@@ -60,6 +62,7 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
     {
       id: "coder",
       name: "Coding Agent",
+      ensName: "coder.agenthire.eth",
       description: "Generates robust functions, APIs, scripts, unit tests, and production software modules.",
       capability: "code.generation",
       basePrice: 180000,
@@ -70,6 +73,7 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
     {
       id: "data-analyst",
       name: "Data Analyst Agent",
+      ensName: "analyst.agenthire.eth",
       description: "In-depth spreadsheet and numerical dataset analysis: statistics, volatility, trend forecasting, and tabular insights.",
       capability: "data.analytics",
       basePrice: 150000,
@@ -80,6 +84,7 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
     {
       id: "report-writer",
       name: "Report Generation Agent",
+      ensName: "reporter.agenthire.eth",
       description: "Synthesizes multi-source data and findings into executive-grade structured Markdown reports with citations.",
       capability: "document.report",
       basePrice: 110000,
@@ -90,6 +95,7 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
     {
       id: "doc-summarizer",
       name: "Document Summarizer Agent",
+      ensName: "summarizer.agenthire.eth",
       description: "Condenses lengthy PDF documents, Word files, research papers, and technical memos into concise executive briefs.",
       capability: "document.summarize",
       basePrice: 95000,
@@ -112,6 +118,7 @@ export async function discover(store: JobStore, merchant = DEMO_MERCHANT) {
       const worker: MarketplaceAgent = {
         id: s.id,
         name: s.name,
+        ensName: s.ensName,
         description: s.description,
         maxInput: 100,
         basePrice: s.basePrice,

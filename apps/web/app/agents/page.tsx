@@ -7,6 +7,7 @@ import { Marketplace } from "../marketplace";
 type Agent = {
   id: string;
   name: string;
+  ensName?: string;
   description: string;
   capability: string;
   basePrice: number;
@@ -278,7 +279,14 @@ export default function AgentsMarketplace() {
                   </div>
 
                   <div>
-                    <h3 className="text-base font-bold text-white tracking-tight">{agent.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-white tracking-tight">{agent.name}</h3>
+                      {agent.ensName && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-sky-300 border border-blue-500/20 text-[10px] font-mono">
+                          {agent.ensName}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                       {agent.description}
                     </p>
