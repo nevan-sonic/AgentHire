@@ -185,7 +185,18 @@ Return JSON:
         specialistKey = decision.selectedAgent;
         reasoning = decision.reasoning || `Delegating task to ${SPECIALIST_AGENTS[specialistKey].name}.`;
         analysisContext = decision;
-      } catch { throw new Error("Task classification failed. Check the configured Groq service."); }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        const upstreamStatus = /^Groq rejected the request \(HTTP ([45]\d{2})\)$/.exec(message)?.[1];
+        if (upstreamStatus) throw new Error(`Task classification failed. Groq returned HTTP ${upstreamStatus}.`);
+        if (message === "Groq request failed or timed out") {
+          throw new Error("Task classification failed. The API could not reach Groq or the request timed out.");
+        }
+        if (message === "Groq goals require server configuration and usage enablement") {
+          throw new Error("Task classification failed. Enable Groq and configure its API key on the API service.");
+        }
+        throw new Error("Task classification failed. Check the configured Groq service.");
+      }
 
       const specialist = SPECIALIST_AGENTS[specialistKey];
 
