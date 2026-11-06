@@ -23,9 +23,10 @@ try {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
 
-  const port = Number(process.env.API_PORT ?? "3001");
+  const onRender = process.env.RENDER === "true";
+  const port = Number(onRender ? process.env.PORT : process.env.API_PORT ?? "3001");
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error("API_PORT must be an integer between 1 and 65535");
+    throw new Error("The API port must be an integer between 1 and 65535");
   }
 
   registerHederaStatus(app, process.env);
@@ -61,7 +62,7 @@ try {
   });
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
-  await app.listen({ port, host: "localhost" });
+  await app.listen({ port, host: onRender ? "0.0.0.0" : "localhost" });
 } catch (error) {
   app.log.error(error, "API startup failed");
   process.exitCode = 1;
