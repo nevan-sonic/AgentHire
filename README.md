@@ -431,7 +431,7 @@ The manager chose **TEST** for `paid-pocp-live-001` because the estimated net va
 | Economy prior | Beta(1.2, 0.8), 60% |
 | Economy posterior | Beta(1.2, 1.8), 40% |
 
-The failed test changed the final selection from Economy to **Balanced**. After the settled test payment, **995,000 tinybars** remained. Balanced's **750,000-tinybar** bid fits the protected reserve and would leave **245,000 tinybars** after a future hire. The final hire is planned and unpaid. The HCS records remain pending.
+The failed test changed the final selection from Economy to **Balanced**. After the settled test payment, **995,000 tinybars** remained. Balanced's **750,000-tinybar** hire later settled, leaving **245,000 tinybars**.
 
 ### Complete the selected hire
 
@@ -451,7 +451,27 @@ After separate authorization for exactly one final hire, set `HIRE_LIVE_ENABLED=
 
 The final hire uses a separate durable attempt journal linked to the same task. An existing attempt is referenced and reconciled through read-only Mirror Node checks. The CLI never starts a second payment for that task. The ledger distinguishes settled test and hire spending, reservations, and available budget. An uncertain settlement holds the hire reservation, while a definite rejection releases it. The facilitator sponsors the network fee, which is outside the payer budget.
 
-Completion requires independently verified settlement and output. The evaluator computes a reference from the original task input, checks count, min, max, and mean, and hashes the input, sanitized observed output, and evaluation. A wrong answer keeps the payment record and marks the task failed. Pending version 1 HCS records contain transaction references and digests. Final-hire settlement is pending live verification.
+Completion requires independently verified settlement and output. The evaluator computes a reference from the original task input, checks count, min, max, and mean, and hashes the input, sanitized observed output, and evaluation. A wrong answer keeps the payment record and marks the task failed.
+
+The official facilitator settled the final hire, and the Mirror Node confirmed `SUCCESS`: payer `0.0.11331589` paid merchant `0.0.11330954` **750,000 tinybars (0.0075 HBAR)**. The sponsored fee was **0.00295981 HBAR**, charged to `0.0.9185802`. [Final-hire transaction](https://hashscan.io/testnet/transaction/0.0.9185802-1793925842-587414987)
+
+Balanced returned `{"count":4,"min":2,"max":8,"mean":5}` for `[2,4,6,8]`, matching the independent reference. The evidence SHA-256 is `0d552ae272bda05a5dc607c27767728cab84dc2677d064014252d0bed6f9ca23`. The task reached `task_completed`, with **245,000 tinybars** available and zero outstanding reservations.
+
+### Publish the completed procurement audit
+
+The publisher loads the completed final-hire and capability-test journals, independently checks both x402 transfers, and revalidates the result and budget. It loads the eight version 1 records from the final-hire journal. Their deterministic IDs derive from the task ID, event type, and occurrence role, which separates the two settlement records. The ordered manifest pins each event ID and canonical payload hash. The stored event timestamps describe record preparation. Mirror Node consensus timestamps and sequences describe publication.
+
+The order is `JOB_CREATED`, `BID_SUBMITTED` (the accepted Balanced bid summary), `CAPABILITY_TEST_REQUESTED`, `PAYMENT_SETTLED` (test), `CAPABILITY_TEST_COMPLETED`, `WORKER_SELECTED`, `PAYMENT_SETTLED` (hire), and `TASK_COMPLETED`. The test settlement precedes test completion because the Economy adapter released its output after payment.
+
+```bash
+pnpm --filter @agenthire/api audit:publish
+```
+
+The default command reads the existing testnet topic and verifies the operator key, original demo message at sequence 1, both payment records, and each prepared event hash. It reports the indexed topic head and whether any task events are already published, missing, conflicting, or uncertain. The eight procurement events are prepared and await authorized publication.
+
+After explicit authorization for the reported manifest, set `AUDIT_LIVE_ENABLED=true`, `AUDIT_LIVE_TASK_ID=paid-pocp-live-001`, `AUDIT_LIVE_TOPIC_ID=0.0.11331471`, `AUDIT_LIVE_MANIFEST_HASH` to the reported hash, and `AUDIT_LIVE_EXPIRES_AT` to the approval expiry in ISO UTC. The proposed limits are `AUDIT_LIVE_MAX_SUBMISSIONS=8`, `AUDIT_LIVE_PER_MESSAGE_TINYBARS=10000000` (0.1 HBAR), and `AUDIT_LIVE_AGGREGATE_TINYBARS=80000000` (0.8 HBAR). With approval and these settings, `pnpm --filter @agenthire/api audit:publish --execute` submits one event at a time through the native SDK and independently verifies each indexed message before advancing.
+
+Keep the ignored `.agenthire-x402/` journals. Each submission is claimed on disk and its Hedera transaction ID is recorded before execution. A restart scans the topic for the same identity and hash, skips verified records, and stops on conflicts or unconfirmed attempts. If indexing is delayed, rerun the read-only command to reconcile the journal with topic history. Keep publication to one workspace with the shared journal. The publisher leaves both settled x402 payments intact.
 
 ## References
 

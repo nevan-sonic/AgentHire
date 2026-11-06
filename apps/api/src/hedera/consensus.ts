@@ -21,7 +21,7 @@ export function parseHcsFee(value: string): Hbar {
   return Hbar.fromTinybars(tinybars.toString());
 }
 
-type HcsWriteOptions = { network: "testnet"; maxFee: Hbar };
+type HcsWriteOptions = { network: "testnet"; maxFee: Hbar; beforeSubmit?: (transactionId: string) => Promise<void> };
 
 async function submit(client: Client, transaction: Transaction, options: HcsWriteOptions) {
   if (options.network !== "testnet" || BigInt(options.maxFee.toTinybars().toString()) <= 0n) {
@@ -38,6 +38,7 @@ async function submit(client: Client, transaction: Transaction, options: HcsWrit
   const transactionId = transaction.transactionId?.toString();
   if (!transactionId) throw new Error("Could not assign an HCS transaction ID");
   const hashScanUrl = `https://hashscan.io/${options.network}/transaction/${transactionId.replace(/@(\d+)\.(\d+)$/, "-$1-$2")}`;
+  await options.beforeSubmit?.(transactionId);
   let receipt;
   try {
     const response = await transaction.execute(client, 15_000);

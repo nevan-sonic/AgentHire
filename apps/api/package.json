@@ -15,7 +15,8 @@
     "agents:demo": "tsx src/cli/agents-demo.ts",
     "pocp:demo": "tsx src/cli/pocp-demo.ts",
     "pocp:paid-demo": "tsx src/cli/paid-pocp-demo.ts",
-    "procurement:complete": "tsx src/cli/procurement-complete.ts"
+    "procurement:complete": "tsx src/cli/procurement-complete.ts",
+    "audit:publish": "tsx src/cli/audit-publish.ts"
   },
   "dependencies": {
     "@agenthire/shared": "workspace:*",
