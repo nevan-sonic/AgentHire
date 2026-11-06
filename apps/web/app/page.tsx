@@ -56,6 +56,7 @@ const stageColors: Record<AgentLogEntry["stage"], { bg: string; text: string; bo
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<"RESEARCH" | "CODING" | "DATA_ANALYST" | "REPORT_WRITER" | "DOC_SUMMARIZER" | null>(null);
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AgentLogEntry[]>([]);
@@ -65,12 +66,17 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const presets = [
-    { label: "🔬 Research & Deep Thinking", prompt: "Investigate Hedera Consensus Service (HCS) and conduct deep thinking on how tamper-evident audit logs secure autonomous agent workflows" },
-    { label: "💻 Coding / API", prompt: "Create a TypeScript function to construct, sign, and execute a native TransferTransaction with error handling using @hiero-ledger/sdk" },
-    { label: "📊 Data Analysis", prompt: "Analyze server latency spikes [24, 56, 120, 310, 45, 29, 680, 52] ms, compute statistics, and identify anomalies" },
-    { label: "📑 Report Generation", prompt: "Generate a comprehensive executive report on the economic benefits of agent micropayments over HTTP 402" },
-    { label: "📄 Document Summarization", prompt: "Summarize a research paper on decentralized AI agent governance and extract core takeaways and action items" },
+    { key: "RESEARCH" as const, label: "🔬 Research & Deep Thinking", prompt: "Investigate Hedera Consensus Service (HCS) and conduct deep thinking on how tamper-evident audit logs secure autonomous agent workflows" },
+    { key: "CODING" as const, label: "💻 Coding / API", prompt: "Create a TypeScript function to construct, sign, and execute a native TransferTransaction with error handling using @hiero-ledger/sdk" },
+    { key: "DATA_ANALYST" as const, label: "📊 Data Analysis", prompt: "Analyze server latency spikes [24, 56, 120, 310, 45, 29, 680, 52] ms, compute statistics, and identify anomalies" },
+    { key: "REPORT_WRITER" as const, label: "📑 Report Generation", prompt: "Generate a comprehensive executive report on the economic benefits of agent micropayments over HTTP 402" },
+    { key: "DOC_SUMMARIZER" as const, label: "📄 Document Summarization", prompt: "Summarize a research paper on decentralized AI agent governance and extract core takeaways and action items" },
   ];
+
+  // Whether file upload is relevant for current task
+  const showFileUpload = selectedCategory === "DATA_ANALYST" ||
+    selectedCategory === "DOC_SUMMARIZER" ||
+    /excel|sheet|spreadsheet|csv|tabular|pdf|word|docx|document|summar/i.test(prompt);
 
   // Auto-scroll logs as new entries stream in
   useEffect(() => {
@@ -191,43 +197,45 @@ export default function Home() {
               />
             </label>
 
-            {/* File Attachment Pill / Upload Section */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept=".csv,.xlsx,.xls,.tsv,.pdf,.docx,.doc,.txt,.json,.md"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium transition cursor-pointer"
-                >
-                  <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                  <span>Attach Document or Spreadsheet</span>
-                </button>
+            {/* File Attachment Section - only shown for Data Analysis and Document Summarization */}
+            {showFileUpload && (
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs animate-fade-in bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept=".csv,.xlsx,.xls,.tsv,.pdf,.docx,.doc,.txt,.json,.md"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 font-medium transition cursor-pointer"
+                  >
+                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    <span>Attach Spreadsheet / Document</span>
+                  </button>
 
-                {attachedFile && (
-                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-950/70 border border-emerald-800 text-emerald-300 font-mono">
-                    <span className="truncate max-w-[200px]">{attachedFile.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setAttachedFile(null)}
-                      className="text-slate-400 hover:text-slate-100 font-bold ml-1 cursor-pointer"
-                      title="Remove file"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
+                  {attachedFile && (
+                    <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-950/70 border border-emerald-800 text-emerald-300 font-mono">
+                      <span className="truncate max-w-[200px]">{attachedFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setAttachedFile(null)}
+                        className="text-slate-400 hover:text-slate-100 font-bold ml-1 cursor-pointer"
+                        title="Remove file"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <span className="text-slate-400 font-mono text-[11px]">Supported: .csv, .xlsx, .pdf, .docx, .txt</span>
               </div>
-              <span className="text-slate-500 font-mono text-[11px]">Supported: .csv, .xlsx, .pdf, .docx, .txt</span>
-            </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
@@ -237,8 +245,18 @@ export default function Home() {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => setPrompt(preset.prompt)}
-                  className="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/50 transition cursor-pointer"
+                  onClick={() => {
+                    setSelectedCategory(preset.key);
+                    setPrompt(preset.prompt);
+                    if (preset.key !== "DATA_ANALYST" && preset.key !== "DOC_SUMMARIZER") {
+                      setAttachedFile(null);
+                    }
+                  }}
+                  className={`text-xs px-2.5 py-1 rounded-md border transition cursor-pointer ${
+                    selectedCategory === preset.key
+                      ? "bg-emerald-950 text-emerald-300 border-emerald-700"
+                      : "bg-slate-800/70 hover:bg-slate-800 text-slate-300 border-slate-700/50"
+                  }`}
                 >
                   {preset.label}
                 </button>
