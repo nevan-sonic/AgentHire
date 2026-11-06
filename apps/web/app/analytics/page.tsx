@@ -1,78 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useVerifiedReceipts } from "../use-verified-receipts";
+
 import { Marketplace } from "../marketplace";
 
 export default function AnalyticsPage() {
   const [tab, setTab] = useState<"overview" | "history">("overview");
 
-  const stats = {
-    totalSpentTinybars: 3450000,
-    totalEarnedTinybars: 2850000,
-    activeSubcontracts: 12,
-    successRate: 98.4,
-  };
-
-  const taskHistory = [
-    {
-      id: "tsk-9821",
-      task: "Native TransferTransaction code generation",
-      agent: "Coding Agent",
-      type: "Spent",
-      amount: "180,000 tinybars",
-      status: "Settled & Verified",
-      timestamp: "Today, 11:18 AM",
-      txId: "0.0.11331589@1793943830.959449382",
-    },
-    {
-      id: "tsk-9818",
-      task: "Server latency spikes [24, 56, 120] numerical stats",
-      agent: "Data Analyst Agent",
-      type: "Spent",
-      amount: "150,000 tinybars",
-      status: "Settled & Verified",
-      timestamp: "Today, 10:52 AM",
-      txId: "0.0.11331589@1793942568.325956882",
-    },
-    {
-      id: "tsk-9790",
-      task: "Hedera Consensus Service audit logging brief",
-      agent: "Research Agent",
-      type: "Earned",
-      amount: "120,000 tinybars",
-      status: "Payout Received",
-      timestamp: "Yesterday, 04:30 PM",
-      txId: "0.0.9185802@1793925842.587414987",
-    },
-    {
-      id: "tsk-9762",
-      task: "Decentralized AI Governance PDF summary",
-      agent: "Document Summarizer Agent",
-      type: "Spent",
-      amount: "95,000 tinybars",
-      status: "Settled & Verified",
-      timestamp: "Yesterday, 02:15 PM",
-      txId: "0.0.9185802@1793924857.289452104",
-    },
-  ];
-
+  const { receipts, status } = useVerifiedReceipts();
+  const spent = receipts.reduce((sum, row) => sum + BigInt(row.data.amount), 0n);
+  const hbar = `${spent / 100000000n}.${(spent % 100000000n).toString().padStart(8, "0")}`;
+  const taskHistory = receipts.map(({ title, at, data }) => ({
+    id: data.transactionId, task: title, agent: data.worker ?? "Worker unavailable", type: "Spent",
+    amount: BigInt(data.amount).toLocaleString("en-US") + " tinybars", status: "Settled & Verified",
+    timestamp: new Date(at).toLocaleString(), txId: data.transactionId,
+  }));
   return (
     <Marketplace>
-      <div className="space-y-6">
+      <div className="space-y-6">{status && <p role="status">{status}</p>}
         {/* Banner */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-white/[0.07]">
           <div>
             <div className="flex items-center gap-2 mb-2 font-mono text-[11px] text-slate-400">
               <span className="uppercase tracking-wider font-semibold">User Account</span>
               <span className="text-white/20">/</span>
-              <span>Hedera Wallet: 0.0.11331589</span>
+              <span>Hedera testnet procurement</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
               My Wallet & Earnings
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-              Track your token balance, what you've spent hiring agents, and what your published agents have earned completing tasks for others.
+              Review independently verified procurement payments from saved jobs and goals.
             </p>
           </div>
 
@@ -108,7 +67,7 @@ export default function AnalyticsPage() {
               <div className="sharp-card p-5 space-y-2">
                 <span className="text-xs text-slate-400 font-medium">You Spent (Hiring Agents)</span>
                 <div className="text-2xl font-bold font-mono text-white">
-                  {(stats.totalSpentTinybars / 100_000_000).toFixed(4)} <span className="text-sm font-normal text-slate-400">HBAR</span>
+                  {status ? "—" : hbar} <span className="text-sm font-normal text-slate-400">HBAR</span>
                 </div>
                 <span className="text-[11px] text-slate-500 font-mono">Paid for completed tasks</span>
               </div>
@@ -116,20 +75,20 @@ export default function AnalyticsPage() {
               <div className="sharp-card p-5 space-y-2">
                 <span className="text-xs text-slate-400 font-medium">Your Agent Earnings</span>
                 <div className="text-2xl font-bold font-mono text-emerald-400">
-                  +{(stats.totalEarnedTinybars / 100_000_000).toFixed(4)} <span className="text-sm font-normal">HBAR</span>
+                  — <span className="text-sm font-normal">HBAR</span>
                 </div>
                 <span className="text-[11px] text-slate-500 font-mono">Earned by your published agent</span>
               </div>
 
               <div className="sharp-card p-5 space-y-2">
                 <span className="text-xs text-slate-400 font-medium">Tasks Delegated</span>
-                <div className="text-2xl font-bold font-mono text-white">{stats.activeSubcontracts}</div>
+                <div className="text-2xl font-bold font-mono text-white">—</div>
                 <span className="text-[11px] text-slate-500">Autonomous subtasks completed</span>
               </div>
 
               <div className="sharp-card p-5 space-y-2">
                 <span className="text-xs text-slate-400 font-medium">Success Rate</span>
-                <div className="text-2xl font-bold font-mono text-sky-400">{stats.successRate}%</div>
+                <div className="text-2xl font-bold font-mono text-sky-400">—</div>
                 <span className="text-[11px] text-emerald-400 font-mono">Accurate deliverables verified</span>
               </div>
             </div>
@@ -168,7 +127,7 @@ export default function AnalyticsPage() {
                   <div className="p-3 rounded-lg bg-black/40 border border-white/[0.05] space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-mono">Escrow Account</span>
-                      <span className="font-mono text-emerald-400">0.0.11331589</span>
+                      <span className="font-mono text-emerald-400">{receipts.find(row => row.data.payer)?.data.payer ?? "Unavailable"}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-mono">Settlement Latency (Avg)</span>
@@ -176,11 +135,11 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-mono">Audit Topic ID</span>
-                      <span className="font-mono text-sky-400">0.0.11331471</span>
+                      <span className="font-mono text-sky-400">See run audit details</span>
                     </div>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
-                    All agent payments settle peer-to-peer via native Hedera cryptographic transactions. No intermediary custody or central fee extraction.
+                    Receipts show independently verified x402 settlements from saved procurement runs.
                   </p>
                 </div>
               </div>

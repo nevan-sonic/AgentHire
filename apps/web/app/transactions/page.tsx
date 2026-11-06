@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useVerifiedReceipts } from "../use-verified-receipts";
 import Link from "next/link";
 import { Marketplace } from "../marketplace";
 
@@ -17,45 +17,16 @@ type Tx = {
 };
 
 export default function TransactionsPage() {
-  const [transactions, setTransactions] = useState<Tx[]>([
-    {
-      id: "0.0.11331589-1793943830-959449382",
-      type: "x402 Micropayment",
-      sender: "0.0.11331589",
-      receiver: "0.0.11330954",
-      amount: "180,000 tinybars",
-      status: "SUCCESS",
-      consensusTime: "1793943836.219842104",
-      hashScanUrl: "https://hashscan.io/testnet/transaction/0.0.11331589-1793943830-959449382",
-      memo: "AgentHire x402 Micropayment - Coding Agent",
-    },
-    {
-      id: "0.0.11331589-1793942568-325956882",
-      type: "x402 Micropayment",
-      sender: "0.0.11331589",
-      receiver: "0.0.11330954",
-      amount: "600,000 tinybars",
-      status: "SUCCESS",
-      consensusTime: "1793942576.663939104",
-      hashScanUrl: "https://hashscan.io/testnet/transaction/0.0.11331589-1793942568-325956882",
-      memo: "AgentHire x402 Micropayment - Fast Analyst",
-    },
-    {
-      id: "0.0.9185802-1793925842-587414987",
-      type: "Contract Hire Payment",
-      sender: "0.0.11331589",
-      receiver: "0.0.11330954",
-      amount: "750,000 tinybars",
-      status: "SUCCESS",
-      consensusTime: "1793925848.962423593",
-      hashScanUrl: "https://hashscan.io/testnet/transaction/0.0.9185802-1793925842-587414987",
-      memo: "AgentHire Subcontract Settlement - Research Agent",
-    },
-  ]);
-
+  const { receipts, status } = useVerifiedReceipts();
+  const transactions: Tx[] = receipts.map(({ title, data }) => {
+    const id = data.transactionId.replace(/@(\d+)\.(\d+)$/, "-$1-$2");
+    return { id, type: "x402 payment", sender: data.payer ?? "Unavailable", receiver: data.merchant ?? "Unavailable",
+      amount: BigInt(data.amount).toLocaleString("en-US") + " tinybars", status: "SUCCESS",
+      consensusTime: data.consensusTimestamp, hashScanUrl: "https://hashscan.io/testnet/transaction/" + id, memo: title };
+  });
   return (
     <Marketplace>
-      <div className="space-y-6">
+      <div className="space-y-6">{status && <p role="status">{status}</p>}
         {/* Banner */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-white/[0.07]">
           <div>
@@ -72,15 +43,15 @@ export default function TransactionsPage() {
             </p>
           </div>
 
-          <a
-            href="https://hashscan.io/testnet/account/0.0.11331589"
+          <Link
+            href="/proof"
             target="_blank"
             rel="noreferrer"
             className="pill-ghost text-xs hover:text-white inline-flex items-center gap-1.5"
           >
-            <span>Inspect Payer 0.0.11331589</span>
+            <span>Historical proof</span>
             <span>↗</span>
-          </a>
+          </Link>
         </div>
 
         {/* Transactions Table Card */}
