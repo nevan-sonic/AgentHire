@@ -100,98 +100,157 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* 4 Clean Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          <div className="sharp-card p-5 space-y-2">
-            <span className="text-xs text-slate-400 font-medium">Total Micro-Spending</span>
-            <div className="text-2xl font-bold font-mono text-white">
-              {(stats.totalSpentTinybars / 100_000_000).toFixed(4)} <span className="text-sm font-normal text-slate-400">HBAR</span>
+        {/* Conditional View Based on Selected Tab */}
+        {tab === "overview" && (
+          <>
+            {/* 4 Clean Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              <div className="sharp-card p-5 space-y-2">
+                <span className="text-xs text-slate-400 font-medium">Total Micro-Spending</span>
+                <div className="text-2xl font-bold font-mono text-white">
+                  {(stats.totalSpentTinybars / 100_000_000).toFixed(4)} <span className="text-sm font-normal text-slate-400">HBAR</span>
+                </div>
+                <span className="text-[11px] text-slate-500 font-mono">3,450,000 tinybars paid</span>
+              </div>
+
+              <div className="sharp-card p-5 space-y-2">
+                <span className="text-xs text-slate-400 font-medium">Total Agent Payouts</span>
+                <div className="text-2xl font-bold font-mono text-emerald-400">
+                  +{(stats.totalEarnedTinybars / 100_000_000).toFixed(4)} <span className="text-sm font-normal">HBAR</span>
+                </div>
+                <span className="text-[11px] text-slate-500 font-mono">2,850,000 tinybars earned</span>
+              </div>
+
+              <div className="sharp-card p-5 space-y-2">
+                <span className="text-xs text-slate-400 font-medium">Subcontracts Awarded</span>
+                <div className="text-2xl font-bold font-mono text-white">{stats.activeSubcontracts}</div>
+                <span className="text-[11px] text-slate-500">Autonomous A2A handoffs</span>
+              </div>
+
+              <div className="sharp-card p-5 space-y-2">
+                <span className="text-xs text-slate-400 font-medium">Settlement Success Rate</span>
+                <div className="text-2xl font-bold font-mono text-sky-400">{stats.successRate}%</div>
+                <span className="text-[11px] text-emerald-400 font-mono">0 SLA violations</span>
+              </div>
             </div>
-            <span className="text-[11px] text-slate-500 font-mono">3,450,000 tinybars paid</span>
-          </div>
 
-          <div className="sharp-card p-5 space-y-2">
-            <span className="text-xs text-slate-400 font-medium">Total Agent Payouts</span>
-            <div className="text-2xl font-bold font-mono text-emerald-400">
-              +{(stats.totalEarnedTinybars / 100_000_000).toFixed(4)} <span className="text-sm font-normal">HBAR</span>
+            {/* Financial Telemetry Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="sharp-card p-5 space-y-3">
+                <h3 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">
+                  Settlement Breakdown by Agent Role
+                </h3>
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between py-1 border-b border-white/[0.04]">
+                    <span className="text-slate-300">Coding Agent (code.generation)</span>
+                    <span className="font-mono font-bold text-white">1,820,000 tinybars (52.7%)</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1 border-b border-white/[0.04]">
+                    <span className="text-slate-300">Data Analyst Agent (data.analytics)</span>
+                    <span className="font-mono font-bold text-white">980,000 tinybars (28.4%)</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1 border-b border-white/[0.04]">
+                    <span className="text-slate-300">Research Agent (web.research)</span>
+                    <span className="font-mono font-bold text-white">450,000 tinybars (13.0%)</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-slate-300">Summarizer Agent (document.summarize)</span>
+                    <span className="font-mono font-bold text-white">200,000 tinybars (5.9%)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="sharp-card p-5 space-y-3">
+                <h3 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">
+                  Hedera Consensus Escrow Status
+                </h3>
+                <div className="space-y-2 text-xs">
+                  <div className="p-3 rounded-lg bg-black/40 border border-white/[0.05] space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 font-mono">Escrow Account</span>
+                      <span className="font-mono text-emerald-400">0.0.11331589</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 font-mono">Settlement Latency (Avg)</span>
+                      <span className="font-mono text-white">2.8s consensus finality</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 font-mono">Audit Topic ID</span>
+                      <span className="font-mono text-sky-400">0.0.11331471</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
+                    All agent payments settle peer-to-peer via native Hedera cryptographic transactions. No intermediary custody or central fee extraction.
+                  </p>
+                </div>
+              </div>
             </div>
-            <span className="text-[11px] text-slate-500 font-mono">2,850,000 tinybars earned</span>
-          </div>
+          </>
+        )}
 
-          <div className="sharp-card p-5 space-y-2">
-            <span className="text-xs text-slate-400 font-medium">Subcontracts Awarded</span>
-            <div className="text-2xl font-bold font-mono text-white">{stats.activeSubcontracts}</div>
-            <span className="text-[11px] text-slate-500">Autonomous A2A handoffs</span>
-          </div>
+        {/* Settlement History Table (Shows when History tab is active) */}
+        {tab === "history" && (
+          <div className="sharp-card overflow-hidden">
+            <div className="px-5 py-3.5 bg-[#131822] border-b border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">
+                Verifiable Settlement Ledger
+              </h3>
+              <span className="text-xs font-mono text-slate-400">{taskHistory.length} Recorded Tasks</span>
+            </div>
 
-          <div className="sharp-card p-5 space-y-2">
-            <span className="text-xs text-slate-400 font-medium">Settlement Success Rate</span>
-            <div className="text-2xl font-bold font-mono text-sky-400">{stats.successRate}%</div>
-            <span className="text-[11px] text-emerald-400 font-mono">0 SLA violations</span>
-          </div>
-        </div>
-
-        {/* Table of tasks */}
-        <div className="sharp-card overflow-hidden">
-          <div className="px-5 py-3.5 bg-[#131822] border-b border-white/[0.06] flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">
-              Verifiable Settlement Ledger
-            </h3>
-            <span className="text-xs font-mono text-slate-400">{taskHistory.length} Recorded Tasks</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-black/30 text-slate-400 border-b border-white/[0.06]">
-                <tr>
-                  <th className="px-5 py-3 font-medium">Task & Context</th>
-                  <th className="px-5 py-3 font-medium">Assigned Agent</th>
-                  <th className="px-5 py-3 font-medium">Flow</th>
-                  <th className="px-5 py-3 font-medium">Amount</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Consensus Transaction</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04]">
-                {taskHistory.map((item) => (
-                  <tr key={item.id} className="hover:bg-white/[0.015] transition">
-                    <td className="px-5 py-3.5">
-                      <div className="text-white font-sans font-medium text-xs truncate max-w-[280px]">
-                        {item.task}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">{item.id} · {item.timestamp}</div>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-300 font-sans">{item.agent}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`px-2 py-0.5 rounded text-[10px] ${
-                        item.type === "Spent" ? "bg-amber-400/10 text-amber-300 border border-amber-400/20" : "bg-emerald-400/10 text-emerald-300 border border-emerald-400/20"
-                      }`}>
-                        {item.type}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 font-bold text-white">{item.amount}</td>
-                    <td className="px-5 py-3.5">
-                      <span className="text-emerald-400 flex items-center gap-1.5 text-[11px]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <a
-                        href={`https://hashscan.io/testnet/transaction/${item.txId.replace("@", "-")}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sky-400 hover:underline truncate max-w-[160px] inline-block"
-                      >
-                        {item.txId} ↗
-                      </a>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="bg-black/30 text-slate-400 border-b border-white/[0.06]">
+                  <tr>
+                    <th className="px-5 py-3 font-medium">Task & Context</th>
+                    <th className="px-5 py-3 font-medium">Assigned Agent</th>
+                    <th className="px-5 py-3 font-medium">Flow</th>
+                    <th className="px-5 py-3 font-medium">Amount</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 font-medium">Consensus Transaction</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {taskHistory.map((item) => (
+                    <tr key={item.id} className="hover:bg-white/[0.015] transition">
+                      <td className="px-5 py-3.5">
+                        <div className="text-white font-sans font-medium text-xs truncate max-w-[280px]">
+                          {item.task}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono">{item.id} · {item.timestamp}</div>
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-300 font-sans">{item.agent}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] ${
+                          item.type === "Spent" ? "bg-amber-400/10 text-amber-300 border border-amber-400/20" : "bg-emerald-400/10 text-emerald-300 border border-emerald-400/20"
+                        }`}>
+                          {item.type}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 font-bold text-white">{item.amount}</td>
+                      <td className="px-5 py-3.5">
+                        <span className="text-emerald-400 flex items-center gap-1.5 text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <a
+                          href={`https://hashscan.io/testnet/transaction/${item.txId.replace("@", "-")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sky-400 hover:underline truncate max-w-[160px] inline-block"
+                        >
+                          {item.txId} ↗
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </Marketplace>
   );
