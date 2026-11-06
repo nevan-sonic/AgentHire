@@ -2,9 +2,9 @@ import { setTimeout as delay } from "node:timers/promises";
 import { isRecord } from "../agents/task.js";
 import { readBounded } from "./tools.js";
 
-const maxCalls = 6;
-const maxTokens = 24_000;
-const outputLimit = 1800;
+const maxCalls = 10;
+const maxTokens = 64_000;
+const outputLimit = 4096;
 
 export class GroqClient {
   private requests = 0;
@@ -48,7 +48,11 @@ export class GroqClient {
           continue;
         }
       }
-      if (!response.ok) throw new Error(`Groq rejected the request (HTTP ${response.status})`);
+      if (!response.ok) {
+        let errBody = "";
+        try { errBody = await response.text(); } catch {}
+        throw new Error(`Groq rejected the request (HTTP ${response.status}): ${errBody.slice(0, 300)}`);
+      }
       const payload = await readBounded(response, 64_000).catch(() => { throw new Error("Invalid or oversized Groq response"); });
       if (!isRecord(payload) || !Array.isArray(payload.choices) || !isRecord(payload.usage)) throw new Error("Invalid Groq response");
       const choice = payload.choices[0];

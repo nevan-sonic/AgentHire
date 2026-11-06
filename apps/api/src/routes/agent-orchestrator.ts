@@ -354,13 +354,14 @@ Return JSON:
       } else if (specialistKey === "CODING") {
         const res = (await groq.json(
           "WORKER",
-          `You are the Coding Agent. Write a clean, production-ready, well-documented function or API implementation according to the user prompt.
+          `You are the Coding Agent. Write a clean, production-ready function or API implementation according to the user prompt.
+Provide valid JSON without markdown code blocks inside the JSON string properties.
 Return JSON:
 {
-  "language": "e.g. TypeScript, Python, etc.",
-  "explanation": "concise architectural walkthrough of how the code works",
-  "code": "executable code snippet with types, error handling, and comments",
-  "usageExample": "how to call or test the function/API"
+  "language": "TypeScript",
+  "explanation": "concise walkthrough of the implementation",
+  "code": "concise typescript code snippet with types and error handling",
+  "usageExample": "quick usage call"
 }`,
           { prompt }
         )) as { language?: string; explanation?: string; code?: string; usageExample?: string };
