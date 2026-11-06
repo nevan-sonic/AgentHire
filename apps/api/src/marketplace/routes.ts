@@ -1,3 +1,4 @@
+import { eventStreams } from "./sse.js";
 import { fileURLToPath } from "node:url";
 import type { FastifyInstance } from "fastify";
 import { loadHederaMirrorNodeUrl } from "../config/hedera.js";
@@ -13,12 +14,12 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
 )) {
   const merchant = env.X402_MERCHANT_ID;
   const active = new Set<Promise<unknown>>();
-  const streams = new Set<() => void>();
+  const streams = eventStreams(32);
   function schedule(work: Promise<unknown>) {
     active.add(work);
     void work.catch(() => app.log.warn("Marketplace background operation stopped")).finally(() => active.delete(work));
   }
-  app.addHook("preClose", async () => { for (const close of streams) close(); });
+  app.addHook("preClose", async () => { streams.close(); });
   app.addHook("onClose", async () => { await Promise.allSettled(active); store.close(); });
 
   for (const job of store.recoverable()) {
@@ -58,29 +59,8 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
   app.get<{ Params: Params; Querystring: { cursor?: string } }>("/api/marketplace/jobs/:jobId/events", (request, reply) => {
     const job = store.job(request.params.jobId);
     if (!job) return reply.code(404).send({ error: "Job not found" });
-    if (streams.size >= 32) return reply.code(429).send({ error: "Too many event streams" });
-    const last = request.headers["last-event-id"] ?? request.query.cursor ?? "0";
-    if (typeof last !== "string" || !/^\d{1,15}$/.test(last)) return reply.code(400).send({ error: "Invalid event cursor" });
-    let cursor = Number(last);
-    reply.hijack();
-    const res = reply.raw;
-    res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform",
-      "X-Accel-Buffering": "no", Connection: "keep-alive" });
-    res.write("retry: 1500\n\n");
-    const close = () => { clearInterval(timer); streams.delete(close); if (!res.writableEnded) res.end(); };
-    const flush = () => {
-      if (res.writableLength > 64_000) return close();
-      const events = store.events(job.id, cursor);
-      if (!events.length) res.write(": heartbeat\n\n");
-      for (const event of events) {
-        res.write(`id: ${event.id}\ndata: ${JSON.stringify(event)}\n\n`);
-        cursor = event.id;
-      }
-    };
-    const timer = setInterval(flush, 750);
-    streams.add(close);
-    res.on("close", close);
-    flush();
+    return streams.open(reply, request.headers["last-event-id"] ?? request.query.cursor ?? "0",
+      cursor => store.events(job.id, cursor));
   });
   app.post<{ Params: Params }>("/api/marketplace/jobs/:jobId/authorize", { bodyLimit: 4096 }, async (request, reply) => {
     if (!operatorAuthorized(request.headers.authorization, env.MARKETPLACE_OPERATOR_TOKEN)) {

@@ -6,9 +6,9 @@ export default function Home() {
   return <Marketplace>
     <section className="intro market-hero">
       <p className="eyebrow">Agent marketplace / statistics.summary</p>
-      <h1>Hire the right AI agent.<br /><span>Let intelligence negotiate.</span></h1>
-      <p className="lede">Describe a task. AgentHire discovers workers, compares bids, tests capabilities when worthwhile, and pays for verified work on Hedera.</p>
-      <div className="actions"><Link className="button primary-link" href="/jobs/new">Create a Job ↗</Link><Link className="button" href="/agents">Explore Agents</Link></div>
+      <h1>Your goal.<br /><span>An economy of AI agents.</span></h1>
+      <p className="lede">Create a research goal for a cited deliverable, or open the statistics marketplace to compare worker bids and review a Hedera payment plan.</p>
+      <div className="actions"><Link className="button primary-link" href="/goals">Create a Goal ↗</Link><Link className="button" href="/agents">Explore Agents</Link><Link className="button" href="/jobs/new">Create a statistics job</Link></div>
     </section>
     <section className="section">
       <p className="eyebrow">01 / Supply</p><h2>Registered worker services</h2>

@@ -24,7 +24,12 @@
         "MARKETPLACE_LIVE_ENABLED",
         "MARKETPLACE_OPERATOR_TOKEN",
         "X402_PAYER_ID",
-        "X402_PAYER_KEY"
+        "X402_PAYER_KEY",
+        "GROQ_GOALS_ENABLED",
+        "GROQ_API_KEY",
+        "GROQ_MANAGER_MODEL",
+        "GROQ_WORKER_MODEL",
+        "GROQ_VERIFIER_MODEL"
       ]
     },
     "build": {

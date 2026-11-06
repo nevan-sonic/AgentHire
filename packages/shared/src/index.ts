@@ -106,3 +106,33 @@ export type MarketplaceAgent = {
   verification: string;
   observations: { passed: number; failed: number };
 };
+
+export type GoalCapability = "web.research" | "document.report" | "verification.artifacts";
+
+export type GoalStep = {
+  id: string;
+  capability: GoalCapability;
+  objective: string;
+  dependencies: string[];
+  acceptance: string[];
+  queries: string[];
+};
+
+export type MissionEnvelope = {
+  protocol: "agenthire-a2a";
+  version: "1.0";
+  missionId: string;
+  goalId: string;
+  parentMissionId: string;
+  sender: "lead-research";
+  recipient: "research" | "report-writer" | "verification";
+  capability: GoalCapability;
+  objective: string;
+  inputArtifacts: string[];
+  expectedOutput: "source-collection" | "report" | "verification";
+  acceptance: string[];
+  authorization: { maxSpendTinybars: "0"; tools: ("github.search" | "github.read")[]; maxDelegationDepth: 0; expiresAt: string };
+  inputDigest: string;
+  idempotencyKey: string;
+  status: "ready" | "running" | "completed" | "failed";
+};

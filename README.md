@@ -543,3 +543,9 @@ The manager refreshes and matches the approved plan, uses the official x402 faci
 2. Create a preview job with `[10,20,30,40,50]`. Open the returned bids and PoCP valuation.
 3. For a separately authorized live job, show the approved scope, then follow the settlement and evaluation events.
 4. Open the verified settlement and HCS links. For an offline demonstration, use the previously verified `/proof` dashboard.
+
+## Research goals
+
+Open [Create a Goal](http://localhost:3000/goals) with the existing local API and frontend running. Describe a public repository research objective and the expected report. Configure server-side Groq credentials and opt in to usage as described in the [Groq guide](docs/architecture/GROQ_INTEGRATION.md). The goal workspace shows the validated plan, assigned missions, real provider and retrieval activity, linked artifacts, and a downloadable cited report record. Goal history and artifacts persist in `.agenthire-marketplace/goals.sqlite`.
+
+This research workflow sends the goal to Groq and derived search terms to GitHub. Use public, non-sensitive objectives. Every research mission has zero HBAR authority. The [statistics marketplace](http://localhost:3000/agents) and [historical proof](http://localhost:3000/proof) remain available independently. See the [architecture](docs/architecture/AGENT_ECONOMY.md) and [NevoraX audit](docs/architecture/NEVORAX_REUSE_AUDIT.md) for scope and pending integrations.
