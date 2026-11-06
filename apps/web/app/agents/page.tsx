@@ -156,7 +156,7 @@ export default function AgentsMarketplace() {
     setError(null);
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    let url = `${apiUrl}/api/orchestrator/stream?prompt=${encodeURIComponent(taskPrompt.trim())}`;
+    let url = `${apiUrl}/api/orchestrator/stream?prompt=${encodeURIComponent(taskPrompt.trim())}&targetCapability=${encodeURIComponent(activeAgent.capability)}`;
     if (attachedFile) {
       url += `&fileName=${encodeURIComponent(attachedFile.name)}&fileContent=${encodeURIComponent(attachedFile.content.slice(0, 4000))}`;
     }

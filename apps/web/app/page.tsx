@@ -115,7 +115,15 @@ export default function Home() {
     setError(null);
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    let url = `${apiUrl}/api/orchestrator/stream?prompt=${encodeURIComponent(prompt.trim())}`;
+    const categoryMap: Record<string, string> = {
+      RESEARCH: "web.research",
+      CODING: "code.generation",
+      DATA_ANALYST: "data.analytics",
+      REPORT_WRITER: "document.report",
+      DOC_SUMMARIZER: "document.summarize",
+    };
+    const capParam = selectedCategory && categoryMap[selectedCategory] ? `&targetCapability=${encodeURIComponent(categoryMap[selectedCategory])}` : "";
+    let url = `${apiUrl}/api/orchestrator/stream?prompt=${encodeURIComponent(prompt.trim())}${capParam}`;
     if (attachedFile) {
       url += `&fileName=${encodeURIComponent(attachedFile.name)}&fileContent=${encodeURIComponent(attachedFile.content.slice(0, 4000))}`;
     }

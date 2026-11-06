@@ -51,6 +51,43 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
       return reply.code(400).send({ error: "Missing required agent fields: name, capability, description" });
     }
 
+    // Enforce capability scope constraint on published agents
+    const VALID_CAPABILITIES = [
+      "web.research",
+      "code.generation",
+      "data.analytics",
+      "document.report",
+      "document.summarize",
+    ];
+
+    if (!VALID_CAPABILITIES.includes(capability)) {
+      return reply.code(400).send({
+        error: `Invalid capability domain "${capability}". Published agents must conform to one of the marketplace standard capability scopes: ${VALID_CAPABILITIES.join(", ")}`,
+      });
+    }
+
+    if (description.length < 20) {
+      return reply.code(400).send({
+        error: "Agent operational description is too brief. Provide at least 20 characters explaining the agent's target use case, models, and SLA.",
+      });
+    }
+
+    // Verify description relevance to chosen capability
+    const capabilityKeywords: Record<string, RegExp> = {
+      "web.research": /research|search|investigate|evidence|web|topic|sources|facts/i,
+      "code.generation": /code|function|api|script|develop|software|typescript|python|rust|bug|test/i,
+      "data.analytics": /data|analys|stat|metric|excel|sheet|spreadsheet|numbers|math|tabular/i,
+      "document.report": /report|document|executive|findings|structured|write|synthesis/i,
+      "document.summarize": /summar|tldr|brief|paper|pdf|word|condense|abstract/i,
+    };
+
+    const matcher = capabilityKeywords[capability];
+    if (matcher && !matcher.test(description) && !matcher.test(name)) {
+      return reply.code(400).send({
+        error: `Agent description does not match selected capability "${capability}". The description must explain relevance to ${capability}.`,
+      });
+    }
+
     const id = "custom-" + name.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString().slice(-4);
     const agentData = {
       id,

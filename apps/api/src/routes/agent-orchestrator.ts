@@ -87,10 +87,11 @@ async function executeOnChainSettlement(
 
 export function registerAgentOrchestrator(app: FastifyInstance, env: NodeJS.ProcessEnv) {
   // Live Streaming SSE Endpoint for Agent Activity Logs & Real-Time Thinking
-  app.get<{ Querystring: { prompt: string; fileName?: string; fileContent?: string } }>("/api/orchestrator/stream", async (request, reply) => {
+  app.get<{ Querystring: { prompt: string; fileName?: string; fileContent?: string; targetCapability?: string } }>("/api/orchestrator/stream", async (request, reply) => {
     const prompt = request.query.prompt?.trim();
     const fileName = request.query.fileName?.trim();
     const fileContent = request.query.fileContent?.trim();
+    const targetCapability = request.query.targetCapability?.trim();
     if (!prompt) {
       return reply.code(400).send({ error: "Please provide a task prompt" });
     }
@@ -154,26 +155,29 @@ export function registerAgentOrchestrator(app: FastifyInstance, env: NodeJS.Proc
         const decision = (await groq.json(
           "MANAGER",
           `You are the Master Orchestrator AI Agent at the top of an autonomous agent hierarchy.
-Analyze the user prompt and any attached file to decide which specialist agent to subcontract:
-1. "RESEARCH" - web search, deep thinking, investigating a topic, finding protocols or repos.
-2. "CODING" - writing code, creating a function, building an API, debugging, scripts.
-3. "DATA_ANALYST" - spreadsheet/excel data analysis, tabular numbers, statistics, metrics, csv files.
-4. "REPORT_WRITER" - generating a detailed comprehensive report with recommendations.
-5. "DOC_SUMMARIZER" - summarizing documents, text, pdfs, articles, papers, or word documents.
-
-Note: If an attached file is a spreadsheet (.csv, .xlsx, .xls) or tabular data, choose "DATA_ANALYST".
-If an attached file is a document (.pdf, .docx, .doc, .txt, .md), choose "DOC_SUMMARIZER".
+Your primary role is GOVERNANCE, INTENT VERIFICATION, and ROUTING.
+You must first evaluate if the user's prompt is a valid, coherent task, or if it is random gibberish, spam, or totally irrelevant nonsense (e.g. "asdfghjkl", "blah blah 1234", "qwerty", disconnected random characters).
+Also, if targetCapability is specified ("${targetCapability || ""}"), you must strictly check if the prompt is relevant to that specialist's capability:
+- "web.research": deep inquiry, questions, research topics, concepts.
+- "code.generation": writing functions, scripts, APIs, debugging software.
+- "data.analytics": numbers, dataset metrics, statistics, spreadsheets, tabular calculations.
+- "document.report": structured comprehensive report writing.
+- "document.summarize": condensing text, papers, articles, pdfs.
 
 Return JSON:
 {
+  "isRelevant": true | false,
+  "rejectionReason": "Specific explanation if the prompt is gibberish, nonsensical, or irrelevant to the selected agent",
   "selectedAgent": "RESEARCH" | "CODING" | "DATA_ANALYST" | "REPORT_WRITER" | "DOC_SUMMARIZER",
   "reasoning": "detailed chain-of-thought why this specialist is the ideal candidate",
   "searchQuery": "search query if research",
   "language": "language/framework if coding",
   "extractedNumbers": [number, number, ...] if data analysis
 }`,
-          { prompt: effectivePrompt, fileName }
+          { prompt: effectivePrompt, fileName, targetCapability }
         )) as {
+          isRelevant?: boolean;
+          rejectionReason?: string;
           selectedAgent?: keyof typeof SPECIALIST_AGENTS;
           reasoning?: string;
           searchQuery?: string;
@@ -181,12 +185,43 @@ Return JSON:
           extractedNumbers?: number[];
         };
 
+        // Enforce strict relevance constraint
+        if (decision.isRelevant === false) {
+          const reason = decision.rejectionReason || "Input prompt is invalid, nonsensical, or irrelevant to the selected agent's scope.";
+          emitLog(
+            "Orchestrator Agent (Master)",
+            "DECISION",
+            `[TASK REJECTED] Governance & Scope Violation: ${reason}`,
+            { rejectedPrompt: prompt, reason, status: "SCOPE_MISMATCH_OR_GIBBERISH" }
+          );
+          sendEvent("error", {
+            error: `Task Rejected by Orchestrator Governance: ${reason}`,
+            details: "AgentHire enforces task relevance. Random inputs, gibberish, or tasks misaligned with the target agent's capability scope are prevented from executing or spending funds."
+          });
+          return;
+        }
+
         if (decision.selectedAgent && SPECIALIST_AGENTS[decision.selectedAgent]) {
           specialistKey = decision.selectedAgent;
         }
         reasoning = decision.reasoning || `Delegating task to ${SPECIALIST_AGENTS[specialistKey].name}.`;
         analysisContext = decision;
       } catch {
+        // Fallback relevance check: check if prompt is total gibberish or empty
+        if (/^[^a-zA-Z0-9]+$/.test(prompt) || prompt.length < 5 || /(.)\1{5,}/.test(prompt)) {
+          emitLog(
+            "Orchestrator Agent (Master)",
+            "DECISION",
+            `[TASK REJECTED] Input prompt appears to be random characters or gibberish. Refusing to subcontract.`,
+            { prompt, status: "REJECTED_GIBBERISH" }
+          );
+          sendEvent("error", {
+            error: "Task Rejected: Input prompt is too short, nonsensical, or contains random characters.",
+            details: "Please provide a clear objective relevant to the agent's capability."
+          });
+          return;
+        }
+
         // Deterministic heuristics fallback
         if (/code|function|api|implement|script|typescript|python|rust/i.test(prompt)) {
           specialistKey = "CODING";
