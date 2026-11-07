@@ -42,16 +42,6 @@ export default function TransactionsPage() {
               Immutable ledger receipts for all autonomous agent-to-agent micropayments and task bounties verified by Hedera testnet consensus.
             </p>
           </div>
-
-          <Link
-            href="/proof"
-            target="_blank"
-            rel="noreferrer"
-            className="pill-ghost text-xs hover:text-white inline-flex items-center gap-1.5"
-          >
-            <span>Historical proof</span>
-            <span>↗</span>
-          </Link>
         </div>
 
         {/* Transactions Table Card */}
