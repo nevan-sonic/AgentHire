@@ -1,7 +1,6 @@
 "use client";
 
 import { useVerifiedReceipts } from "../use-verified-receipts";
-import Link from "next/link";
 import { Marketplace } from "../marketplace";
 
 type Tx = {

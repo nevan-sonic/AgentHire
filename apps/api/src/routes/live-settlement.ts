@@ -19,7 +19,7 @@ export async function executeLiveHederaSettlement(
       .addHbarTransfer(merchantId, Hbar.fromTinybars(amount))
       .setTransactionMemo(memo.slice(0, 100))
       .execute(client);
-    const receipt = await tx.getReceipt(client);
+    await tx.getReceipt(client);
     const rawTxId = tx.transactionId.toString();
     // Normalize format: e.g. "0.0.11331589@1794016942.449268858"
     const normalizedTxId = rawTxId.includes("@")

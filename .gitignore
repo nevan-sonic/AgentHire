@@ -10,3 +10,14 @@ next-env.d.ts
 .agenthire-x402/
 .agenthire-marketplace/
 .neon
+
+# Local agent tooling
+/.codex/
+/.agents/skills/
+/skills-lock.json
+
+# Local diagnostics and editor files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
