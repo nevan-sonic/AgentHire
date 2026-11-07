@@ -1,4 +1,4 @@
-export function openTaskStream(body: { prompt: string; targetCapability?: string; fileName?: string; fileContent?: string }) {
+export function openTaskStream(body: { prompt: string; targetCapability?: string; fileName?: string; fileContent?: string; maxBudgetTinybars?: string }) {
   const events = new EventTarget();
   const controller = new AbortController();
   void (async () => {

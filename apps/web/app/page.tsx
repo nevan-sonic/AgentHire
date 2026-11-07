@@ -68,6 +68,7 @@ const stageBadge: Record<AgentLogEntry["stage"], { badge: string; text: string }
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
+  const [budgetTinybars, setBudgetTinybars] = useState<string>("300000");
   const [selectedCategory, setSelectedCategory] = useState<"RESEARCH" | "CODING" | "DATA_ANALYST" | "REPORT_WRITER" | "DOC_SUMMARIZER" | null>(null);
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -138,7 +139,7 @@ export default function Home() {
       DOC_SUMMARIZER: "document.summarize",
     };
     const eventSource = openTaskStream({ prompt: prompt.trim(), targetCapability: selectedCategory ? categoryMap[selectedCategory] : undefined,
-      fileName: attachedFile?.name, fileContent: attachedFile?.content.slice(0, 4000) });
+      fileName: attachedFile?.name, fileContent: attachedFile?.content.slice(0, 4000), maxBudgetTinybars: budgetTinybars });
 
     eventSource.addEventListener("log", (event: Event) => {
       try {
@@ -347,6 +348,27 @@ export default function Home() {
                   <span className="text-[11px] text-slate-500 font-mono">Supported: .csv, .xlsx, .pdf, .docx</span>
                 </div>
               )}
+
+              {/* Budget Allocation Control */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs font-mono">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-sky-400" />
+                  <span className="text-white font-semibold font-sans">Task Spending Ceiling:</span>
+                  <span className="text-slate-400">Agents priced above will not be hired.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={budgetTinybars}
+                    onChange={(e) => setBudgetTinybars(e.target.value)}
+                    step="10000"
+                    min="50000"
+                    max="10000000"
+                    className="w-32 px-2.5 py-1 rounded bg-black/60 border border-white/[0.12] text-white text-right font-mono text-xs focus:outline-none focus:border-sky-400"
+                  />
+                  <span className="text-slate-400 text-[11px]">tinybars</span>
+                </div>
+              </div>
 
               {/* Form Actions */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">

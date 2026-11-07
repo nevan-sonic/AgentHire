@@ -59,16 +59,17 @@ export const SPECIALIST_AGENTS = {
 export function registerAgentOrchestrator(app: FastifyInstance, env: NodeJS.ProcessEnv, store?: JobStore) {
   // Live Streaming SSE Endpoint for Agent Activity Logs & Real-Time Thinking
   let active = 0;
-  app.post<{ Body: { prompt: string; fileName?: string; fileContent?: string; targetCapability?: string } }>("/api/orchestrator/stream", { bodyLimit: 8192 }, async (request, reply) => {
+  app.post<{ Body: { prompt: string; fileName?: string; fileContent?: string; targetCapability?: string; maxBudgetTinybars?: string } }>("/api/orchestrator/stream", { bodyLimit: 8192 }, async (request, reply) => {
     const { body } = request;
     if (!body || typeof body.prompt !== "string" || body.prompt.length > 2000 ||
-        [body.fileName, body.fileContent, body.targetCapability].some(value => value !== undefined && typeof value !== "string")) {
+        [body.fileName, body.fileContent, body.targetCapability, body.maxBudgetTinybars].some(value => value !== undefined && typeof value !== "string")) {
       return reply.code(400).send({ error: "Invalid specialist task" });
     }
     const prompt = body.prompt.trim();
     const fileName = request.body?.fileName?.trim();
     const fileContent = request.body?.fileContent?.trim();
     const targetCapability = request.body?.targetCapability?.trim();
+    const maxBudgetTinybars = request.body?.maxBudgetTinybars?.trim();
     if (!prompt) {
       return reply.code(400).send({ error: "Please provide a task prompt" });
     }
@@ -197,7 +198,53 @@ Return JSON:
             (targetCapability && SPECIALIST_AGENTS[decision.selectedAgent].capability !== targetCapability)) {
           throw new Error("Invalid specialist decision");
         }
-        specialistKey = decision.selectedAgent;
+        // If user defined a maximum budget, filter agents according to budget constraints
+        const userBudgetNum = maxBudgetTinybars ? Number(maxBudgetTinybars) : undefined;
+        if (userBudgetNum && Number.isFinite(userBudgetNum)) {
+          emitLog(
+            "Orchestrator Agent (Master)",
+            "THINKING",
+            `Applying user budget constraint: maximum ${userBudgetNum.toLocaleString()} tinybars. Scanning specialist registry for candidates within price ceiling...`,
+            { userBudgetTinybars: userBudgetNum }
+          );
+
+          // Find candidate specialists matching the capability or selectedAgent within budget
+          const primaryCandidate = SPECIALIST_AGENTS[decision.selectedAgent!];
+          if (Number(primaryCandidate.basePrice) > userBudgetNum) {
+            // Find an alternative specialist within budget if any
+            const affordableEntry = (Object.entries(SPECIALIST_AGENTS) as [keyof typeof SPECIALIST_AGENTS, typeof SPECIALIST_AGENTS[keyof typeof SPECIALIST_AGENTS]][])
+              .find(([, s]) => Number(s.basePrice) <= userBudgetNum);
+
+            if (affordableEntry) {
+              decision.selectedAgent = affordableEntry[0];
+              decision.reasoning = `Rerouted to '${affordableEntry[1].name}' (${affordableEntry[1].basePrice} tinybars) to strictly honor user budget cap of ${userBudgetNum} tinybars.`;
+            } else {
+              emitLog(
+                "Orchestrator Agent (Master)",
+                "DECISION",
+                `[BUDGET EXCEEDED] No specialist agent is available under ${userBudgetNum} tinybars. Lowest available fee is 95,000 tinybars.`,
+                { budget: userBudgetNum, minimumSpecialistPrice: 95000 }
+              );
+              sendEvent("error", {
+                error: `Budget Constraint Exceeded: The task budget of ${userBudgetNum.toLocaleString()} tinybars is below all available specialist rates (lowest is 95,000 tinybars).`,
+                details: "AgentHire strictly respects user-defined spending limits. No agents will be hired and zero funds are expended when budget caps cannot be met."
+              });
+              return;
+            }
+          }
+
+          // Also check subcontracting budget
+          if (decision.subcontractedAgent) {
+            const primaryPrice = Number(SPECIALIST_AGENTS[decision.selectedAgent!].basePrice);
+            const subPrice = Number(SPECIALIST_AGENTS[decision.subcontractedAgent].basePrice);
+            if (primaryPrice + subPrice > userBudgetNum) {
+              decision.subcontractedAgent = null;
+              decision.reasoning += ` (Subcontracting omitted to stay strictly within total budget of ${userBudgetNum} tinybars).`;
+            }
+          }
+        }
+
+        specialistKey = decision.selectedAgent!;
         reasoning = decision.reasoning || `Delegating task to ${SPECIALIST_AGENTS[specialistKey].name}.`;
         analysisContext = decision;
       } catch (error) {
