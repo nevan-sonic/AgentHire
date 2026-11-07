@@ -42,7 +42,17 @@ type FinalResult = {
     explorerUrl?: string;
     status: string;
     scheme: string;
+    role?: string;
   };
+  payments?: Array<{
+    payer: string;
+    recipient: string;
+    amountTinybars: string;
+    transactionId?: string;
+    explorerUrl?: string;
+    status: string;
+    role?: string;
+  }>;
   finalOutput: string;
 };
 
@@ -461,26 +471,28 @@ export default function Home() {
         {/* Deliverable Section */}
         {result && (
           <div className="space-y-4 animate-fade-in">
-            {/* Settlement Bar */}
-            {result.payment && (
-              <div className="p-4 rounded-xl sharp-card-subtle flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
+            {/* Settlement Bar / Multi-Payment Cards */}
+            {((result.payments && result.payments.length > 0) ? result.payments : (result.payment ? [result.payment] : [])).map((pmt, idx) => (
+              <div key={pmt.transactionId || idx} className="p-4 rounded-xl sharp-card-subtle flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <strong className="text-white text-sm font-sans font-semibold">x402 Micropayment Settled</strong>
-                    <span className="text-slate-400">({Number(result.payment.amountTinybars).toLocaleString()} tinybars)</span>
+                    <strong className="text-white text-sm font-sans font-semibold">
+                      {pmt.role ? `x402 Settlement (${pmt.role})` : "x402 Micropayment Settled"}
+                    </strong>
+                    <span className="text-slate-400">({Number(pmt.amountTinybars).toLocaleString()} tinybars)</span>
                   </div>
                   <div className="text-slate-400">
-                    Payer: <span className="text-slate-200">{result.payment.payer}</span> · Merchant: <span className="text-slate-200">{result.payment.recipient}</span>
+                    Payer: <span className="text-slate-200">{pmt.payer}</span> · Merchant: <span className="text-slate-200">{pmt.recipient}</span>
                   </div>
                   <div className="text-slate-400">
-                    Tx ID: <span className="text-slate-200">{result.payment.transactionId}</span>
+                    Tx ID: <span className="text-slate-200">{pmt.transactionId}</span>
                   </div>
                 </div>
 
-                {result.payment.explorerUrl && (
+                {pmt.explorerUrl && (
                   <a
-                    href={result.payment.explorerUrl}
+                    href={pmt.explorerUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="pill-ghost text-xs hover:text-white"
@@ -490,7 +502,7 @@ export default function Home() {
                   </a>
                 )}
               </div>
-            )}
+            ))}
 
             {/* Deliverable Box */}
             <div className="sharp-card p-6 space-y-4">

@@ -144,11 +144,21 @@ Also, if targetCapability is specified ("${targetCapability || ""}"), you must s
 - "document.report": structured comprehensive report writing.
 - "document.summarize": condensing text, papers, articles, pdfs.
 
+Determine the primary specialist agent needed.
+Also determine if this task benefits from multi-agent collaboration (subcontracting pipeline).
+For example:
+- If a task involves research that needs formal report writing, primary is RESEARCH and subcontracted is REPORT_WRITER.
+- If a task analyzes data/spreadsheets and needs an executive presentation report, primary is DATA_ANALYST and subcontracted is REPORT_WRITER.
+- If a task analyzes code architecture and needs documentation/summary, primary is CODING and subcontracted is DOC_SUMMARIZER.
+- If the task is self-contained (e.g. simple code snippet or simple summary), subcontracted is null.
+
 Return JSON:
 {
   "isRelevant": true | false,
   "rejectionReason": "Specific explanation if the prompt is gibberish, nonsensical, or irrelevant to the selected agent",
   "selectedAgent": "RESEARCH" | "CODING" | "DATA_ANALYST" | "REPORT_WRITER" | "DOC_SUMMARIZER",
+  "subcontractedAgent": "RESEARCH" | "CODING" | "DATA_ANALYST" | "REPORT_WRITER" | "DOC_SUMMARIZER" | null,
+  "subcontractReason": "Brief reason why the primary agent hires the secondary agent",
   "reasoning": "brief reason for the routing decision",
   "searchQuery": "search query if research",
   "language": "language/framework if coding",
@@ -159,6 +169,8 @@ Return JSON:
           isRelevant?: boolean;
           rejectionReason?: string;
           selectedAgent?: keyof typeof SPECIALIST_AGENTS;
+          subcontractedAgent?: keyof typeof SPECIALIST_AGENTS | null;
+          subcontractReason?: string;
           reasoning?: string;
           searchQuery?: string;
           language?: string;
@@ -227,6 +239,7 @@ Return JSON:
         explorerUrl: string;
         status: string;
         scheme: string;
+        role?: string;
       } | undefined;
 
       const payer = env.X402_PAYER_ID;
@@ -475,21 +488,171 @@ Return JSON:
           (res.actionItems ? res.actionItems.map((a) => `1. ${a}`).join("\n") : "");
       }
 
-      // 7. Master Synthesis & Final Output
+      // 7. Dynamic Subcontracting & Cascading Agent-to-Agent Payment (if multi-agent pipeline selected)
+      const subcontractedKey = (analysisContext.subcontractedAgent as keyof typeof SPECIALIST_AGENTS | undefined);
+      let subcontractPaymentResult: typeof paymentResult | undefined;
+      let finalAgentName: string = specialist.name;
+
+      if (subcontractedKey && subcontractedKey !== specialistKey && Object.hasOwn(SPECIALIST_AGENTS, subcontractedKey)) {
+        const subSpecialist = SPECIALIST_AGENTS[subcontractedKey];
+        finalAgentName = `${specialist.name} → ${subSpecialist.name}`;
+
+        emitLog(
+          specialist.name,
+          "NEGOTIATION",
+          `Autonomous Subcontracting: '${specialist.name}' is hiring '${subSpecialist.name}' [Fee: ${subSpecialist.basePrice} tinybars]. Reason: ${analysisContext.subcontractReason || "Delegating specialized synthesis/formatting"}.`,
+          {
+            parentAgent: specialist.name,
+            subcontractor: subSpecialist.name,
+            subcontractorCapability: subSpecialist.capability,
+            subcontractFee: subSpecialist.basePrice,
+          }
+        );
+
+        if (payer && payerKey && merchant) {
+          try {
+            const subMemo = `AgentHire Subcontract: ${specialist.name} -> ${subSpecialist.name}`;
+            const subLiveTx = await executeLiveHederaSettlement(payer, payerKey, merchant, subSpecialist.basePrice, subMemo);
+
+            subcontractPaymentResult = {
+              payer,
+              recipient: merchant,
+              amountTinybars: subSpecialist.basePrice,
+              transactionId: subLiveTx.transactionId,
+              explorerUrl: subLiveTx.explorerUrl,
+              status: "Settled on Hedera Testnet via x402",
+              scheme: "x402-exact-hbar",
+              role: `Subcontract: ${specialist.name} → ${subSpecialist.name}`,
+            };
+
+            emitLog(
+              specialist.name,
+              "PAYMENT",
+              `Settled Cascading x402 Micropayment of ${subSpecialist.basePrice} tinybars on Hedera to '${subSpecialist.name}'! Tx: ${subLiveTx.transactionId}`,
+              {
+                transactionId: subLiveTx.transactionId,
+                explorerUrl: subLiveTx.explorerUrl,
+                amountTinybars: subSpecialist.basePrice,
+                payer: specialist.name,
+                payee: subSpecialist.name,
+              }
+            );
+
+            emitLog(
+              subSpecialist.name,
+              "VERIFICATION",
+              `x402 subcontract micropayment confirmed on Hedera Testnet (${subLiveTx.transactionId}). Executing downstream deliverable.`,
+              { transactionId: subLiveTx.transactionId, explorerUrl: subLiveTx.explorerUrl }
+            );
+
+            if (store) {
+              try {
+                const subJobId = randomUUID();
+                store.create({
+                  id: subJobId,
+                  title: `[Subcontract] ${specialist.name} -> ${subSpecialist.name}: ${prompt.slice(0, 50)}`,
+                  mode: "live",
+                  task: {
+                    taskId: subJobId,
+                    taskType: "statistics.summary",
+                    capability: "statistics.summary",
+                    input: [1, 2, 3],
+                    maxBudgetTinybars: subSpecialist.basePrice,
+                    deadlineMs: Date.now() + 60_000,
+                    minimumReliabilityBps: 9000,
+                    selectionStrategy: "cheapest_eligible",
+                  },
+                  maxTest: subSpecialist.basePrice,
+                  status: "completed",
+                  createdAt: new Date().toISOString(),
+                });
+
+                store.event(subJobId, "payment.verified", {
+                  transactionId: subLiveTx.transactionId,
+                  amount: subSpecialist.basePrice,
+                  worker: `${specialist.name} → ${subSpecialist.name}`,
+                  payer,
+                  merchant,
+                  consensusTimestamp: subLiveTx.consensusTimestamp,
+                });
+              } catch {}
+            }
+
+            // Let the subcontracted agent enhance and package the deliverable
+            emitLog(subSpecialist.name, "THINKING", `Synthesizing upstream work into comprehensive executive deliverable...`);
+
+            if (subcontractedKey === "REPORT_WRITER") {
+              const reportRes = (await groq.json(
+                "WORKER",
+                `You are the Report Generation Agent subcontracted by ${specialist.name}.
+Structure the upstream findings into a comprehensive executive report.
+Return JSON:
+{
+  "reportTitle": "Comprehensive Executive Report",
+  "executiveOverview": "Executive overview synthesizing upstream findings",
+  "sections": [{ "heading": "Heading", "content": "Detailed paragraphs" }],
+  "strategicRoadmap": ["point 1", "point 2"]
+}`,
+                { prompt, upstreamDeliverable: specialistDeliverable }
+              )) as { reportTitle?: string; executiveOverview?: string; sections?: Array<{ heading: string; content: string }>; strategicRoadmap?: string[] };
+
+              specialistDeliverable = `# ${reportRes.reportTitle || "Collaborative Intelligence Report"}\n\n` +
+                `*Produced by Autonomous Multi-Agent Hierarchy (${specialist.name} & ${subSpecialist.name})*\n\n` +
+                `**Executive Overview:**\n${reportRes.executiveOverview || ""}\n\n` +
+                (reportRes.sections ? reportRes.sections.map(s => `### ${s.heading}\n${s.content}\n`).join("\n") : "") +
+                `\n### Strategic Roadmap:\n` +
+                (reportRes.strategicRoadmap ? reportRes.strategicRoadmap.map(r => `- ${r}`).join("\n") : "");
+
+            } else if (subcontractedKey === "DOC_SUMMARIZER") {
+              const sumRes = (await groq.json(
+                "WORKER",
+                `You are the Document Summarizer Agent subcontracted by ${specialist.name}.
+Condense and package the upstream work into high-impact executive takeaways.
+Return JSON:
+{
+  "summaryTitle": "Executive Brief",
+  "executiveBrief": "Executive overview",
+  "keyTakeaways": ["takeaway 1", "takeaway 2"],
+  "actionItems": ["action 1", "action 2"]
+}`,
+                { prompt, upstreamDeliverable: specialistDeliverable }
+              )) as { summaryTitle?: string; executiveBrief?: string; keyTakeaways?: string[]; actionItems?: string[] };
+
+              specialistDeliverable = `${specialistDeliverable}\n\n---\n\n## Executive Synthesis (by ${subSpecialist.name})\n\n` +
+                `**Executive Brief:** ${sumRes.executiveBrief || ""}\n\n` +
+                `### Key Takeaways:\n` +
+                (sumRes.keyTakeaways ? sumRes.keyTakeaways.map(t => `- ${t}`).join("\n") : "") +
+                `\n\n### Action Items:\n` +
+                (sumRes.actionItems ? sumRes.actionItems.map(a => `1. ${a}`).join("\n") : "");
+            }
+          } catch (subErr) {
+            app.log.warn({ err: subErr }, "Subcontract settlement failed");
+          }
+        }
+      }
+
+      // 8. Master Synthesis & Final Output
       emitLog(
         "Orchestrator Agent (Master)",
         "SYNTHESIS",
-        `Reviewing and packaging final deliverable received from '${specialist.name}' for user presentation.`
+        `Reviewing and packaging final multi-agent deliverable for user presentation.`
       );
+
+      const allPayments = [
+        ...(paymentResult ? [paymentResult] : []),
+        ...(subcontractPaymentResult ? [subcontractPaymentResult] : []),
+      ];
 
       sendEvent("done", {
         prompt,
-        specialistAgent: specialist.name,
+        specialistAgent: finalAgentName,
         specialistRole: specialist.description,
         primaryAgent: "Orchestrator Agent (Master)",
+        subcontractedAgent: subcontractedKey ? SPECIALIST_AGENTS[subcontractedKey]?.name : undefined,
         computation: computationData,
         sources: sourcesData,
         payment: paymentResult,
+        payments: allPayments,
         finalOutput: specialistDeliverable,
         status: "completed",
         completedAt: new Date().toISOString(),
