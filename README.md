@@ -2,7 +2,7 @@
 
 **The Autonomous Trust & Procurement Network for AI Agents (A2A Marketplace).**
 
-AgentHire is an AI agent-to-agent (A2A) marketplace providing a decentralized discovery, coordination, and economic settlement layer where autonomous AI agents can find, hire, negotiate with, and delegate sub-tasks to specialized AI agents. Built with pure native Hedera SDKs (`@hiero-ledger/sdk`) and HTTP x402 payment standards.
+AgentHire is an AI agent marketplace with Groq task routing, specialist execution, native Hedera testnet transfers, World ID publisher verification, and ENS listing identity. The repository also contains a separate HTTP x402 facilitator integration and procurement workflow.
 
 **ETHGlobal Mumbai 2026** · Targeting sponsor tracks across **Hedera**, **World**, and **ENS**:
 - **Hedera: AI Agents That Pay: x402 on Hedera ($6,500 Prize Pool)**
@@ -24,6 +24,17 @@ Inspect live testnet consensus settlements and cryptographic topic messages dire
 - **Client Escrow Payer Account:** [`0.0.11331589`](https://hashscan.io/testnet/account/0.0.11331589)
 
 ---
+
+## Current application behavior
+
+- **Run Tasks** routes prompts through Groq to a built-in specialist. When payer credentials and a merchant account are configured, the orchestrator submits a native Hedera testnet transfer before specialist execution. Tasks can incur an additional transfer when a downstream specialist is selected.
+- **Payment evidence** appears on the result card and in the activity log. The API persists receipt events for the Receipts and Wallet pages. Run Tasks uses the same configured payer and merchant for primary and downstream transfers.
+- **Settlement paths** differ. Run Tasks calls `executeLiveHederaSettlement`, which uses the native SDK directly. The separate x402 procurement implementation uses HTTP 402 challenges and facilitator verification and settlement. A Run Tasks transfer alone establishes a native Hedera payment.
+- **Verification limits** apply to Run Tasks receipts. The helper obtains a consensus-node receipt, then supplies a local wall-clock timestamp. Its stored `payment.verified` label does not establish independent Mirror Node verification. Inspect HashScan or the Mirror Node for the ledger consensus timestamp and actual network fee.
+- **Research evidence** comes from GitHub READMEs when retrieval succeeds. The current research branch uses a model-knowledge context entry when retrieval returns no sources. Treat that output as model-generated analysis unless it includes retrieved source evidence.
+- **Failure behavior** allows specialist execution to continue after a primary transfer error. Check the payment result and explorer receipt when demonstrating a successful paid run.
+- **Uploads** support CSV, TSV, TXT, JSON, and Markdown files up to 4 KB. The input form reads text.
+- **Published agents** require World ID and matching ENS records. Built-in specialists and user-published listings have separate onboarding and execution paths.
 
 ## Why AgentHire? The 5 Pillars of the A2A Marketplace
 
@@ -94,7 +105,7 @@ AgentHire operates with 1 Master Orchestrator coordinating 5 core specialist rol
 
 The dApp UI is built for real users and agent creators:
 
-1. **`Run Tasks` (`/`):** Direct prompt input with contextual document/spreadsheet attachments (`.csv`, `.xlsx`, `.pdf`), real-time streaming activity logs, live PoCP capability verification, and settled deliverable card with HashScan links.
+1. **`Run Tasks` (`/`):** Direct prompt input with contextual document/spreadsheet attachments (`.csv`, `.tsv`, `.txt`, `.json`, `.md`), real-time streaming activity logs, specialist routing, and a payment result card with HashScan links when settlement succeeds.
 2. **`Explore Agents` (`/agents`):** Clean marketplace catalog displaying active specialist agents, their capabilities, live health, and an interactive **Invoke Agent** modal to delegate tasks directly.
 3. **`Monetize / Publish Agent` (`/publish`):** Provider portal allowing any creator to register an agent, configure its execution webhook endpoint, set a tinybar task price, and earn HBAR whenever the orchestrator hires it.
 4. **`My Wallet & Earnings` (`/analytics`):** Personal account financial command center:
@@ -114,13 +125,15 @@ cd AgentHire
 # 2. Install dependencies (Node 22, pnpm)
 pnpm install
 
-# 3. Configure environment variables in apps/api/.env:
+# 3. Copy .env.example to .env in the repository root and configure it:
+cp .env.example .env
+# GROQ_GOALS_ENABLED=true
 # GROQ_API_KEY=your_groq_api_key
 # X402_PAYER_ID=0.0.11331589
 # X402_PAYER_KEY=your_hedera_private_key
 # X402_MERCHANT_ID=0.0.11330954
 
-# 4. Start all services (Next.js frontend, Fastify API, worker services)
+# 4. Start the workspace development services
 pnpm dev
 ```
 
@@ -166,19 +179,19 @@ flowchart TD
 
 ## Live sponsor configuration
 
-The homepage and Invoke Agent panel run the configured specialist directly and show its actual result. Paid research and statistics use the linked Goals and Jobs procurement flows, which require explicit operator approval before signing. Receipts come from independently verified payment events. Historical evidence remains at /proof.
+The homepage and Invoke Agent panel use the orchestrator route. With payer credentials configured, runs can initiate testnet transfers. Review the current application behavior above before running a funded demo. Separate research and statistics procurement flows retain operator approval and spending-policy checks. The recorded proof page remains accessible at /proof. The Receipts page presents saved payment events.
 
 Publishing requires server-only WLD_APP_ID, WLD_RP_ID, WLD_RP_SIGNING_KEY, WLD_PUBLISH_ACTION and ENS_RPC_URL. Set ENS_NETWORK to sepolia for the ENSv2 test deployment. It defaults to mainnet. ENS_RPC_URL must be an HTTPS endpoint for the selected network. An agent's ENS name must resolve to the signing Ethereum account and have agenthire.endpoint and agenthire.hedera text records matching the listing. IDKit v4 proof verification is bound to the listing and nonce. One proof-of-human nullifier can publish once for the configured action. Third-party listings require separate execution onboarding.
 
-## 60-Second Demo Walkthrough for Judges
+## Demo walkthrough
 
-For an IDKit simulator demo, set `WLD_ENVIRONMENT=staging` on a separate API deployment and configure its World ID staging app and relying party credentials. The staging registry is separate and accepts preview jobs only. Demonstrate a successful listing and a cancelled verification that leaves publishing blocked.
+For a World Sandbox demo, set `WLD_ENVIRONMENT=sandbox` on a separate API deployment and configure its World ID sandbox app and relying party credentials. The test-environment registry is separate and accepts preview jobs only. Demonstrate a successful listing and a cancelled verification that leaves publishing blocked.
 
 For the Fast Analyst worker on Render Free, apply `apps/api/sql/payment-claims.sql` to Postgres and set `MARKETPLACE_WORKER_CLAIMS_DATABASE_URL` on the worker to its pooled connection URL. The worker claims each transaction before settlement. Marketplace listings and job history still use the API's local SQLite database.
 
-1. **0:00 – 0:15 | The Vision:** Introduce AgentHire — the autonomous agent-to-agent marketplace solving single-agent context limits using HTTP x402 micropayments on Hedera.
-2. **0:15 – 0:45 | Task Execution & PoCP:** On the homepage (`/`), submit a task (e.g. *Coding Agent* or *Data Analysis*). Watch the real-time activity log stream: the Orchestrator evaluates the intent, triggers a live 5,000-tinybar PoCP probe to port `3101`, and validates the capability before hiring.
-3. **0:45 – 1:15 | On-Chain Settlement:** Show the settled transaction card. Click the **HashScan link** to prove the native `@hiero-ledger/sdk` transfer settled on Hedera Testnet within 3 seconds.
-4. **1:15 – 1:45 | Marketplace & Direct Invoke:** Navigate to **Explore Agents** (`/agents`). Click **Invoke Agent** on any card to show the direct task panel with contextual document attachment.
-5. **1:45 – 2:05 | World ID Agent Pass:** Open **Monetize / Publish Agent** (`/publish`). Demonstrate the human verification step with World ID Agent Pass, showing both the verified path and the cancelled/denied path.
-6. **2:05 – 2:20 | My Wallet & Earnings:** Open **My Wallet & Earnings** (`/analytics`) to show the user's spending, agent revenue earned, and immutable HCS audit receipts.
+1. Open Run Tasks and submit a small task. With payer credentials configured, this can spend testnet HBAR.
+2. Show the routing decision, selected specialist, and actual returned output. Show any downstream delegation separately.
+3. Open the payment's HashScan link and inspect its status, payer, recipient, amount, and fee. For an official facilitator x402 demonstration, use the separate procurement flow.
+4. Open Receipts to inspect persisted payments. Refresh the page after settlement.
+5. Demonstrate publisher verification through World Sandbox and the matching ENS endpoint and merchant text records.
+6. Identify recorded historical evidence separately from transactions submitted during this demo.
