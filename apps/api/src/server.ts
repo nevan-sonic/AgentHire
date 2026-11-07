@@ -31,10 +31,10 @@ try {
 
   registerHederaStatus(app, process.env);
   registerDemoEvidence(app, process.env);
-  registerMarketplace(app, process.env);
+  const store = registerMarketplace(app, process.env);
   registerGoals(app, process.env);
   const { registerAgentOrchestrator } = await import("./routes/agent-orchestrator.js");
-  registerAgentOrchestrator(app, process.env);
+  registerAgentOrchestrator(app, process.env, store);
 
   // Automatically start marketplace worker services (ports 3101, 3102, 3103)
   const { seeds } = await import("./marketplace/protocol.js");

@@ -172,4 +172,5 @@ export function registerMarketplace(app: FastifyInstance, env: NodeJS.ProcessEnv
         })) };
     } catch { return reply.code(503).send({ error: "Reconciliation evidence unavailable" }); }
   });
+  return store;
 }
